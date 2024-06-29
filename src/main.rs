@@ -1,96 +1,8 @@
+mod vec3;
+use vec3::{Vec3, dot};
+
 use std::fs::File;
 use std::io::Write;
-
-// Operator overloading
-// https://doc.rust-lang.org/rust-by-example/trait/ops.html
-use std::ops::{Add, Sub, Mul, Div, Neg};
-
-#[derive(Copy, Clone)]
-struct Vec3(f64, f64, f64);
-
-impl Vec3 {
-    fn new(x: f64, y: f64, z: f64) -> Self {
-        return Vec3(x, y, z);
-    }
-
-    fn x(&self) -> f64 {
-        return self.0;
-    }
-
-    fn y(&self) -> f64 {
-        return self.1;
-    }
-
-    fn z(&self) -> f64 {
-        return self.2;
-    }
-
-    fn sum(&self) -> f64 {
-        return self.0 + self.1 + self.2;
-    }
-
-    fn length_squared(&self) -> f64 {
-        return self.0 * self.0 + self.1 * self.1 + self.2 * self.2;
-    }
-
-    fn length(&self) -> f64 {
-        return self.length_squared().sqrt();
-    }
-}
-
-impl Add for Vec3 {
-    type Output = Self;
-    fn add(self, rhs: Vec3) -> Self {
-        return Vec3(self.x() + rhs.x(), self.y() + rhs.y(), self.z() + rhs.z());
-    }
-}
-
-impl Sub for Vec3 {
-    type Output = Self;
-    fn sub(self, rhs: Vec3) -> Self {
-        return Vec3(self.x() - rhs.x(), self.y() - rhs.y(), self.z() - rhs.z());
-    }
-}
-
-impl Sub<f64> for Vec3 {
-    type Output = Self;
-    fn sub(self, rhs: f64) -> Vec3 {
-        return Vec3(self.x() - rhs, self.y() - rhs, self.z() - rhs);
-    }
-}
-
-
-impl Mul for Vec3 {
-    type Output = Self;
-    fn mul(self, rhs: Vec3) -> Self {
-        return Vec3(self.x() * rhs.x(), self.y() * rhs.y(), self.z() * rhs.z());
-    }
-}
-
-impl Mul<f64> for Vec3 {
-    type Output = Self;
-    fn mul(self, rhs: f64) -> Vec3 {
-        return Vec3(self.x() * rhs, self.y() * rhs, self.z() * rhs);
-    }
-}
-
-impl Div<f64> for Vec3 {
-    type Output = Self;
-    fn div(self, rhs: f64) -> Vec3 {
-        return Vec3(self.x() / rhs, self.y() / rhs, self.z() / rhs);
-    }
-}
-
-impl Neg for Vec3 {
-    type Output = Self;
-    fn neg(self) -> Self {
-        return Vec3(-self.x(), -self.y(), -self.z());
-    }
-}
-
-fn dot(a: Vec3, b: Vec3) -> f64 {
-    return (a * b).sum();
-}
 
 struct Ray {
     origin: Vec3,
@@ -139,7 +51,7 @@ impl Sphere {
 
 impl Hittable for Sphere {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64, rec: &mut HitRecord) -> bool {
-        let oc = ray.origin - self.center;
+        let oc =  self.center - ray.origin;
 
         let a = ray.dir.length_squared();
         let h = dot(ray.dir, oc);
@@ -151,10 +63,10 @@ impl Hittable for Sphere {
         }
 
         let sqrtd = discriminant.sqrt();
-        let mut root = (-h - sqrtd) / a;
+        let mut root = (h - sqrtd) / a;
         if root <= t_min || t_max <= root {
             root = (h + sqrtd) / a;
-            if root < t_min || t_max < root {
+            if root <= t_min || t_max <= root {
                 return false;
             }
         }
@@ -181,10 +93,12 @@ fn write_new_line(buf: &mut String) {
 }
 
 fn get_ray_color(ray: &Ray) -> Vec3 {
-    let s = Sphere::new(Vec3(0.0, 0.0, 1.0), 0.5);
+    let s = Sphere::new(Vec3(0.0, 0.0, -1.0), 0.5);
+    let s2 = Sphere::new(Vec3(0.0, -100.5, -1.0), 100.0);
     let mut hit_record = HitRecord::new();
-    if s.hit(ray, 0.0, std::f64::INFINITY, &mut hit_record) {
-        let normal = (ray.at(hit_record.t) - Vec3(0.0, 0.0, -1.0)) / 0.5;
+    if s.hit(ray, 0.0, f64::INFINITY, &mut hit_record) || s2.hit(ray, 0.0, f64::INFINITY, &mut
+        hit_record) {
+        let normal = hit_record.normal;
         return Vec3(normal.x() + 1.0, normal.y() + 1.0, normal.z() + 1.0) * 0.5;
     }
     let unit_dir = ray.dir / ray.dir.x().abs().max(ray.dir.y().abs()).max(ray.dir.z().abs());
@@ -226,7 +140,6 @@ fn main() {
                 (j as f64));
             let ray_dir = pixel_center - camera_center;
             let ray = Ray { origin: camera_center, dir: ray_dir };
-            // let c = Vec3(((i as f64) / (w as f64)), ((j as f64) / (h as f64)), 0.0);
             let c = get_ray_color(&ray);
             write_color(&mut buf, c);
         }
