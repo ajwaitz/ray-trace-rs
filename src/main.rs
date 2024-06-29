@@ -40,6 +40,14 @@ impl Sub for Vec3 {
     }
 }
 
+impl Sub<f64> for Vec3 {
+    type Output = Self;
+    fn sub(self, rhs: f64) -> Vec3 {
+        return Vec3(self.x() - rhs, self.y() - rhs, self.z() - rhs);
+    }
+}
+
+
 impl Mul for Vec3 {
     type Output = Self;
     fn mul(self, rhs: Vec3) -> Self {
@@ -59,6 +67,10 @@ impl Div<f64> for Vec3 {
     fn div(self, rhs: f64) -> Vec3 {
         return Vec3(self.x() / rhs, self.y() / rhs, self.z() / rhs);
     }
+}
+
+fn dot(a: Vec3, b: Vec3) -> f64 {
+    return a.x() * b.x() + a.y() * b.y() + a.z() * b.z();
 }
 
 struct Ray {
@@ -84,7 +96,25 @@ fn write_new_line(buf: &mut String) {
     buf.push_str("\n");
 }
 
+fn hit_sphere(center: Vec3, radius: f64, ray: &Ray) -> f64 {
+    let oc = ray.origin - center;
+    let a = dot(ray.dir, ray.dir);
+    let b = -2.0 * dot(oc, ray.dir);
+    let c = dot(oc, oc) - (radius * radius);
+    let discriminant = b * b - 4.0 * a * c;
+    if (discriminant < 0.0) {
+        return -1.0;
+    } else {
+        return (-b - discriminant.sqrt()) / (2.0 * a);
+    }
+}
+
 fn get_ray_color(ray: &Ray) -> Vec3 {
+    let t = hit_sphere(Vec3(0.0, 0.0, 1.0), 0.5, ray);
+    if t > 0.0 {
+        let normal = (ray.at(t) - Vec3(0.0, 0.0, -1.0)) / 0.5;
+        return Vec3(normal.x() + 1.0, normal.y() + 1.0, normal.z() + 1.0) * 0.5;
+    }
     let unit_dir = ray.dir / ray.dir.x().abs().max(ray.dir.y().abs()).max(ray.dir.z().abs());
     let t = 0.5 * (unit_dir.y() + 1.0);
     return Vec3(1.0, 1.0, 1.0) * (1.0 - t) + Vec3(0.5, 0.7, 1.0) * t;
