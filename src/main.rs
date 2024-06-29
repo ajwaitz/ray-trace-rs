@@ -3,7 +3,7 @@ use std::io::Write;
 
 // Operator overloading
 // https://doc.rust-lang.org/rust-by-example/trait/ops.html
-use std::ops::{Add, Sub, Mul, Div};
+use std::ops::{Add, Sub, Mul, Div, Neg};
 
 #[derive(Copy, Clone)]
 struct Vec3(f64, f64, f64);
@@ -81,6 +81,13 @@ impl Div<f64> for Vec3 {
     }
 }
 
+impl Neg for Vec3 {
+    type Output = Self;
+    fn neg(self) -> Self {
+        return Vec3(-self.x(), -self.y(), -self.z());
+    }
+}
+
 fn dot(a: Vec3, b: Vec3) -> f64 {
     return (a * b).sum();
 }
@@ -96,6 +103,71 @@ impl Ray {
     }
 }
 
+struct HitRecord {
+    t: f64,
+    p: Vec3,
+    normal: Vec3,
+    front_face: bool
+}
+
+impl HitRecord {
+    fn new() -> Self {
+        return Self { t: 0.0, p: Vec3(0.0, 0.0, 0.0), normal: Vec3(0.0, 0.0, 0.0), front_face: false};
+    }
+
+    fn set_face_normal(&mut self, ray: &Ray, outward_normal: Vec3) {
+        self.front_face = dot(ray.dir, outward_normal) < 0.0;
+        self.normal = if self.front_face { outward_normal } else { -outward_normal };
+    }
+}
+
+trait Hittable {
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64, rec: &mut HitRecord) -> bool;
+}
+
+#[derive(Copy, Clone)]
+struct Sphere {
+    center: Vec3,
+    radius: f64
+}
+
+impl Sphere {
+    fn new(center: Vec3, radius: f64) -> Self {
+        return Self { center, radius };
+    }
+}
+
+impl Hittable for Sphere {
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64, rec: &mut HitRecord) -> bool {
+        let oc = ray.origin - self.center;
+
+        let a = ray.dir.length_squared();
+        let h = dot(ray.dir, oc);
+        let c = oc.length_squared() - self.radius * self.radius;
+        let discriminant = h * h - a * c;
+
+        if discriminant < 0.0 {
+            return false;
+        }
+
+        let sqrtd = discriminant.sqrt();
+        let mut root = (-h - sqrtd) / a;
+        if root <= t_min || t_max <= root {
+            root = (h + sqrtd) / a;
+            if root < t_min || t_max < root {
+                return false;
+            }
+        }
+
+        rec.t = root;
+        rec.p = ray.at(rec.t);
+        let outward_normal = (rec.p - self.center) / self.radius;
+        rec.set_face_normal(ray, outward_normal);
+
+        return true;
+    }
+}
+
 // Assumes [0,1] input
 fn write_color(buf: &mut String, color: Vec3) {
     let r: i64 = (255.0 * color.x()).trunc() as i64;
@@ -108,25 +180,11 @@ fn write_new_line(buf: &mut String) {
     buf.push_str("\n");
 }
 
-fn hit_sphere(center: Vec3, radius: f64, ray: &Ray) -> f64 {
-    let oc = ray.origin - center;
-
-    let a = ray.dir.length_squared();
-    let h = dot(ray.dir, oc);
-    let c = oc.length_squared() - radius * radius;
-    let discriminant = h * h - a * c;
-
-    return if discriminant < 0.0 {
-        -1.0
-    } else {
-        (h - discriminant.sqrt()) / a
-    }
-}
-
 fn get_ray_color(ray: &Ray) -> Vec3 {
-    let t = hit_sphere(Vec3(0.0, 0.0, 1.0), 0.5, ray);
-    if t > 0.0 {
-        let normal = (ray.at(t) - Vec3(0.0, 0.0, -1.0)) / 0.5;
+    let s = Sphere::new(Vec3(0.0, 0.0, 1.0), 0.5);
+    let mut hit_record = HitRecord::new();
+    if s.hit(ray, 0.0, std::f64::INFINITY, &mut hit_record) {
+        let normal = (ray.at(hit_record.t) - Vec3(0.0, 0.0, -1.0)) / 0.5;
         return Vec3(normal.x() + 1.0, normal.y() + 1.0, normal.z() + 1.0) * 0.5;
     }
     let unit_dir = ray.dir / ray.dir.x().abs().max(ray.dir.y().abs()).max(ray.dir.z().abs());
