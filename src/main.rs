@@ -24,6 +24,18 @@ impl Vec3 {
     fn z(&self) -> f64 {
         return self.2;
     }
+
+    fn sum(&self) -> f64 {
+        return self.0 + self.1 + self.2;
+    }
+
+    fn length_squared(&self) -> f64 {
+        return self.0 * self.0 + self.1 * self.1 + self.2 * self.2;
+    }
+
+    fn length(&self) -> f64 {
+        return self.length_squared().sqrt();
+    }
 }
 
 impl Add for Vec3 {
@@ -70,7 +82,7 @@ impl Div<f64> for Vec3 {
 }
 
 fn dot(a: Vec3, b: Vec3) -> f64 {
-    return a.x() * b.x() + a.y() * b.y() + a.z() * b.z();
+    return (a * b).sum();
 }
 
 struct Ray {
@@ -98,14 +110,16 @@ fn write_new_line(buf: &mut String) {
 
 fn hit_sphere(center: Vec3, radius: f64, ray: &Ray) -> f64 {
     let oc = ray.origin - center;
-    let a = dot(ray.dir, ray.dir);
-    let b = -2.0 * dot(oc, ray.dir);
-    let c = dot(oc, oc) - (radius * radius);
-    let discriminant = b * b - 4.0 * a * c;
-    if (discriminant < 0.0) {
-        return -1.0;
+
+    let a = ray.dir.length_squared();
+    let h = dot(ray.dir, oc);
+    let c = oc.length_squared() - radius * radius;
+    let discriminant = h * h - a * c;
+
+    return if discriminant < 0.0 {
+        -1.0
     } else {
-        return (-b - discriminant.sqrt()) / (2.0 * a);
+        (h - discriminant.sqrt()) / a
     }
 }
 
