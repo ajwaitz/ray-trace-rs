@@ -1,8 +1,12 @@
 mod vec3;
 use vec3::{Vec3, dot};
 
+use std::vec::Vec;
+
 use std::fs::File;
 use std::io::Write;
+
+use std::sync::{Arc};
 
 struct Ray {
     origin: Vec3,
@@ -15,6 +19,7 @@ impl Ray {
     }
 }
 
+#[derive(Copy, Clone)]
 struct HitRecord {
     t: f64,
     p: Vec3,
@@ -80,6 +85,36 @@ impl Hittable for Sphere {
     }
 }
 
+struct HittableList {
+    vec: Vec<Arc<dyn Hittable>>
+}
+
+impl HittableList {
+    fn new() -> Self {
+        return Self { vec: Vec::new() };
+    }
+
+    fn add(&mut self, s: Arc<dyn Hittable>) {
+        self.vec.push(s);
+    }
+
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64, rec: &mut HitRecord) -> bool {
+        let mut temp_rec = HitRecord::new();
+        let mut hit_anything = false;
+        let mut closest_so_far = t_max;
+
+        for s in self.vec.iter() {
+            if (*s).hit(ray, t_min, closest_so_far, &mut temp_rec) {
+                hit_anything = true;
+                closest_so_far = temp_rec.t;
+                *rec = temp_rec;
+            }
+        }
+
+        return hit_anything;
+    }
+}
+
 // Assumes [0,1] input
 fn write_color(buf: &mut String, color: Vec3) {
     let r: i64 = (255.0 * color.x()).trunc() as i64;
@@ -93,11 +128,12 @@ fn write_new_line(buf: &mut String) {
 }
 
 fn get_ray_color(ray: &Ray) -> Vec3 {
-    let s = Sphere::new(Vec3(0.0, 0.0, -1.0), 0.5);
-    let s2 = Sphere::new(Vec3(0.0, -100.5, -1.0), 100.0);
+    let mut world = HittableList::new();
+    world.add(Arc::new(Sphere::new(Vec3(0.0, 0.0, -1.0), 0.5)));
+    world.add(Arc::new(Sphere::new(Vec3(0.0, -100.5, -1.0), 100.0)));
+
     let mut hit_record = HitRecord::new();
-    if s.hit(ray, 0.0, f64::INFINITY, &mut hit_record) || s2.hit(ray, 0.0, f64::INFINITY, &mut
-        hit_record) {
+    if world.hit(ray, 0.0, f64::INFINITY, &mut hit_record) {
         let normal = hit_record.normal;
         return Vec3(normal.x() + 1.0, normal.y() + 1.0, normal.z() + 1.0) * 0.5;
     }
