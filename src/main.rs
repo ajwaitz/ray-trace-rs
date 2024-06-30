@@ -8,6 +8,8 @@ use std::io::Write;
 
 use std::sync::{Arc};
 
+use rand::{thread_rng, Rng};
+
 struct Interval {
     min: f64,
     max: f64
@@ -150,6 +152,7 @@ struct Camera {
     pixel00_loc: Vec3,
     pixel_delta_u: Vec3,
     pixel_delta_v: Vec3,
+    samples_per_pixel: i64
 }
 
 impl Camera {
@@ -163,6 +166,7 @@ impl Camera {
             pixel00_loc: Vec3::new(0.0, 0.0, 0.0),
             pixel_delta_u: Vec3::new(0.0, 0.0, 0.0),
             pixel_delta_v: Vec3::new(0.0, 0.0, 0.0),
+            samples_per_pixel: 10
         };
 
         let focal_length = 1.0;
@@ -188,15 +192,26 @@ impl Camera {
 
         buf.push_str(format!("P3\n{} {}\n255\n", self.image_width, self.image_height).as_str());
 
+        let mut rng = thread_rng();
+
         for j in 0..self.image_height {
             for i in 0..self.image_width {
                 let pixel_center = self.pixel00_loc + (self.pixel_delta_u * (i as f64)) + (self
                     .pixel_delta_v * (j as
                     f64));
-                let ray_dir = pixel_center - self.center;
-                let ray = Ray { origin: self.center, dir: ray_dir };
-                let c = get_ray_color(&ray, &world);
-                write_color(&mut buf, c);
+
+                let mut color = Vec3::new(0.0, 0.0, 0.0);
+                for s in 0..self.samples_per_pixel {
+                    let x_noise = rng.gen_range(-0.5..0.5);
+                    let y_noise = rng.gen_range(-0.5..0.5);
+                    let new_pixel_center = pixel_center + self.pixel_delta_u *
+                        x_noise + self.pixel_delta_v * y_noise;
+                    let ray_dir = new_pixel_center - self.center;
+                    let ray = Ray { origin: self.center, dir: ray_dir };
+                    color = color + get_ray_color(&ray, &world);
+                }
+
+                write_color(&mut buf, color / (self.samples_per_pixel as f64));
             }
             write_new_line(&mut buf);
         }
