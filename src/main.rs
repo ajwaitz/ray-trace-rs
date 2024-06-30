@@ -8,6 +8,33 @@ use std::io::Write;
 
 use std::sync::{Arc};
 
+struct Interval {
+    min: f64,
+    max: f64
+}
+
+impl Interval {
+    const fn new(min: f64, max: f64) -> Self {
+        return Self { min, max }
+    }
+
+    fn size(&self) -> f64 {
+        return self.max - self.min;
+    }
+
+    fn contains(&self, x: f64) -> bool {
+        return self.min <= x && x <= self.max;
+    }
+
+    fn surrounds(&self, x: f64) -> bool {
+        return self.min < x && x < self.max;
+    }
+
+    const EMPTY: Interval = Interval::new(f64::INFINITY, -f64::INFINITY);
+    const MAX: Interval = Interval::new(-f64::INFINITY, f64::INFINITY);
+    const FORWARD: Interval = Interval::new(0.0, f64::INFINITY);
+}
+
 struct Ray {
     origin: Vec3,
     dir: Vec3
@@ -39,7 +66,7 @@ impl HitRecord {
 }
 
 trait Hittable {
-    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64, rec: &mut HitRecord) -> bool;
+    fn hit(&self, ray: &Ray, interval: Interval, rec: &mut HitRecord) -> bool;
 }
 
 #[derive(Copy, Clone)]
@@ -55,7 +82,7 @@ impl Sphere {
 }
 
 impl Hittable for Sphere {
-    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64, rec: &mut HitRecord) -> bool {
+    fn hit(&self, ray: &Ray, interval: Interval, rec: &mut HitRecord) -> bool {
         let oc =  self.center - ray.origin;
 
         let a = ray.dir.length_squared();
@@ -69,9 +96,9 @@ impl Hittable for Sphere {
 
         let sqrtd = discriminant.sqrt();
         let mut root = (h - sqrtd) / a;
-        if root <= t_min || t_max <= root {
+        if !interval.surrounds(root) {
             root = (h + sqrtd) / a;
-            if root <= t_min || t_max <= root {
+            if !interval.surrounds(root) {
                 return false;
             }
         }
@@ -98,13 +125,13 @@ impl HittableList {
         self.vec.push(s);
     }
 
-    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64, rec: &mut HitRecord) -> bool {
+    fn hit(&self, ray: &Ray, interval: Interval, rec: &mut HitRecord) -> bool {
         let mut temp_rec = HitRecord::new();
         let mut hit_anything = false;
-        let mut closest_so_far = t_max;
+        let mut closest_so_far = interval.max;
 
         for s in self.vec.iter() {
-            if (*s).hit(ray, t_min, closest_so_far, &mut temp_rec) {
+            if (*s).hit(ray, Interval::new(interval.min, closest_so_far), &mut temp_rec) {
                 hit_anything = true;
                 closest_so_far = temp_rec.t;
                 *rec = temp_rec;
@@ -112,6 +139,69 @@ impl HittableList {
         }
 
         return hit_anything;
+    }
+}
+
+struct Camera {
+    image_height: i64,
+    image_width: i64,
+    aspect_ratio: f64,
+    center: Vec3,
+    pixel00_loc: Vec3,
+    pixel_delta_u: Vec3,
+    pixel_delta_v: Vec3,
+}
+
+impl Camera {
+    // Define and return a generic camera
+    fn new() -> Self {
+        let mut cam = Camera {
+            image_height: 512,
+            image_width: 512,
+            aspect_ratio: 1.0,
+            center: Vec3::new(0.0, 0.0, 0.0),
+            pixel00_loc: Vec3::new(0.0, 0.0, 0.0),
+            pixel_delta_u: Vec3::new(0.0, 0.0, 0.0),
+            pixel_delta_v: Vec3::new(0.0, 0.0, 0.0),
+        };
+
+        let focal_length = 1.0;
+        let vh = 2.0;
+        let vw = vh * (cam.image_width as f64) / (cam.image_height as f64);
+
+        let viewport_u = Vec3::new(vw, 0.0, 0.0);
+        let viewport_v = Vec3::new(0.0, -vh, 0.0);
+
+        cam.pixel_delta_u = viewport_u / (cam.image_width as f64);
+        cam.pixel_delta_v = viewport_v / (cam.image_height as f64);
+
+        let viewport_upper_left = cam.center - Vec3::new(0.0, 0.0, focal_length)
+            - viewport_u  / 2.0
+            - viewport_v / 2.0;
+        cam.pixel00_loc = viewport_upper_left + (cam.pixel_delta_u + cam.pixel_delta_v) * 0.5;
+
+        return cam;
+    }
+
+    fn render(&self, world: HittableList) -> String {
+        let mut buf = String::new();
+
+        buf.push_str(format!("P3\n{} {}\n255\n", self.image_width, self.image_height).as_str());
+
+        for j in 0..self.image_height {
+            for i in 0..self.image_width {
+                let pixel_center = self.pixel00_loc + (self.pixel_delta_u * (i as f64)) + (self
+                    .pixel_delta_v * (j as
+                    f64));
+                let ray_dir = pixel_center - self.center;
+                let ray = Ray { origin: self.center, dir: ray_dir };
+                let c = get_ray_color(&ray, &world);
+                write_color(&mut buf, c);
+            }
+            write_new_line(&mut buf);
+        }
+
+        return buf;
     }
 }
 
@@ -127,13 +217,9 @@ fn write_new_line(buf: &mut String) {
     buf.push_str("\n");
 }
 
-fn get_ray_color(ray: &Ray) -> Vec3 {
-    let mut world = HittableList::new();
-    world.add(Arc::new(Sphere::new(Vec3(0.0, 0.0, -1.0), 0.5)));
-    world.add(Arc::new(Sphere::new(Vec3(0.0, -100.5, -1.0), 100.0)));
-
+fn get_ray_color(ray: &Ray, world: &HittableList) -> Vec3 {
     let mut hit_record = HitRecord::new();
-    if world.hit(ray, 0.0, f64::INFINITY, &mut hit_record) {
+    if world.hit(ray, Interval::FORWARD, &mut hit_record) {
         let normal = hit_record.normal;
         return Vec3(normal.x() + 1.0, normal.y() + 1.0, normal.z() + 1.0) * 0.5;
     }
@@ -145,42 +231,13 @@ fn get_ray_color(ray: &Ray) -> Vec3 {
 fn main() {
     let mut file = File::create("test.ppm").unwrap();
 
-    // Image configuration
-    let h = 512;
-    let w = 512;
+    let camera = Camera::new();
 
-    // Camera configuration
-    let focal_length = 1.0;
-    let vh = 2.0;
-    let vw = vh * (w as f64) / (h as f64);
-    let camera_center = Vec3::new(0.0, 0.0, 0.0);
+    let mut world = HittableList::new();
+    world.add(Arc::new(Sphere::new(Vec3(0.0, 0.0, -1.0), 0.5)));
+    world.add(Arc::new(Sphere::new(Vec3(0.0, -100.5, -1.0), 100.0)));
 
-    let viewport_u = Vec3::new(vw, 0.0, 0.0);
-    let viewport_v = Vec3::new(0.0, -vh, 0.0);
-
-    let pd_u = viewport_u / (w as f64);
-    let pd_v = viewport_v / (h as f64);
-
-    let viewport_upper_left = camera_center - Vec3::new(0.0, 0.0, focal_length)
-                                    - viewport_u  / 2.0
-                                    - viewport_v / 2.0;
-    let pixel00_loc = viewport_upper_left + (pd_u + pd_v) * 0.5;
-
-    let mut buf = String::new();
-
-    buf.push_str(format!("P3\n{} {}\n255\n", w, h).as_str());
-
-    for j in 0..h {
-        for i in 0..w {
-            let pixel_center = pixel00_loc + (pd_u * (i as f64)) + (pd_v *
-                (j as f64));
-            let ray_dir = pixel_center - camera_center;
-            let ray = Ray { origin: camera_center, dir: ray_dir };
-            let c = get_ray_color(&ray);
-            write_color(&mut buf, c);
-        }
-        write_new_line(&mut buf);
-    }
+    let buf = camera.render(world);
 
     file.write_all(buf.as_ref()).unwrap();
 
