@@ -1,5 +1,5 @@
 mod vec3;
-use vec3::{Vec3, dot};
+use vec3::{Vec3, dot, random_on_hemisphere_vec3};
 
 use std::vec::Vec;
 
@@ -9,6 +9,7 @@ use std::io::Write;
 use std::sync::{Arc};
 
 use rand::{thread_rng, Rng};
+use std::time;
 
 struct Interval {
     min: f64,
@@ -43,6 +44,10 @@ struct Ray {
 }
 
 impl Ray {
+    fn new(origin: Vec3, dir: Vec3) -> Self {
+        return Self { origin, dir };
+    }
+
     fn at(&self, t: f64) -> Vec3 {
         return self.origin + self.dir * t;
     }
@@ -51,14 +56,15 @@ impl Ray {
 #[derive(Copy, Clone)]
 struct HitRecord {
     t: f64,
-    p: Vec3,
+    point: Vec3,
     normal: Vec3,
     front_face: bool
 }
 
 impl HitRecord {
     fn new() -> Self {
-        return Self { t: 0.0, p: Vec3(0.0, 0.0, 0.0), normal: Vec3(0.0, 0.0, 0.0), front_face: false};
+        return Self { t: 0.0, point: Vec3(0.0, 0.0, 0.0), normal: Vec3(0.0, 0.0, 0.0), front_face:
+        false};
     }
 
     fn set_face_normal(&mut self, ray: &Ray, outward_normal: Vec3) {
@@ -106,8 +112,8 @@ impl Hittable for Sphere {
         }
 
         rec.t = root;
-        rec.p = ray.at(rec.t);
-        let outward_normal = (rec.p - self.center) / self.radius;
+        rec.point = ray.at(rec.t);
+        let outward_normal = (rec.point - self.center) / self.radius;
         rec.set_face_normal(ray, outward_normal);
 
         return true;
@@ -152,7 +158,8 @@ struct Camera {
     pixel00_loc: Vec3,
     pixel_delta_u: Vec3,
     pixel_delta_v: Vec3,
-    samples_per_pixel: i64
+    samples_per_pixel: i64,
+    max_depth: i64
 }
 
 impl Camera {
@@ -166,7 +173,8 @@ impl Camera {
             pixel00_loc: Vec3::new(0.0, 0.0, 0.0),
             pixel_delta_u: Vec3::new(0.0, 0.0, 0.0),
             pixel_delta_v: Vec3::new(0.0, 0.0, 0.0),
-            samples_per_pixel: 10
+            samples_per_pixel: 10,
+            max_depth: 50
         };
 
         let focal_length = 1.0;
@@ -208,7 +216,7 @@ impl Camera {
                         x_noise + self.pixel_delta_v * y_noise;
                     let ray_dir = new_pixel_center - self.center;
                     let ray = Ray { origin: self.center, dir: ray_dir };
-                    color = color + get_ray_color(&ray, &world);
+                    color = color + get_ray_color(&ray, &world, self.max_depth);
                 }
 
                 write_color(&mut buf, color / (self.samples_per_pixel as f64));
@@ -232,11 +240,14 @@ fn write_new_line(buf: &mut String) {
     buf.push_str("\n");
 }
 
-fn get_ray_color(ray: &Ray, world: &HittableList) -> Vec3 {
+fn get_ray_color(ray: &Ray, world: &HittableList, depth: i64) -> Vec3 {
+    if depth < 0 {
+        return Vec3::EMPTY;
+    }
     let mut hit_record = HitRecord::new();
     if world.hit(ray, Interval::FORWARD, &mut hit_record) {
-        let normal = hit_record.normal;
-        return Vec3(normal.x() + 1.0, normal.y() + 1.0, normal.z() + 1.0) * 0.5;
+        let dir = random_on_hemisphere_vec3(hit_record.normal);
+        return get_ray_color(&Ray::new(hit_record.point, dir), world, depth - 1) * 0.5;
     }
     let unit_dir = ray.dir / ray.dir.x().abs().max(ray.dir.y().abs()).max(ray.dir.z().abs());
     let t = 0.5 * (unit_dir.y() + 1.0);
@@ -244,6 +255,7 @@ fn get_ray_color(ray: &Ray, world: &HittableList) -> Vec3 {
 }
 
 fn main() {
+    let start = time::Instant::now();
     let mut file = File::create("test.ppm").unwrap();
 
     let camera = Camera::new();
@@ -256,5 +268,5 @@ fn main() {
 
     file.write_all(buf.as_ref()).unwrap();
 
-    println!("Done!");
+    println!("Done! {} s", start.elapsed().as_secs());
 }

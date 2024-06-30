@@ -2,11 +2,14 @@
 // https://doc.rust-lang.org/rust-by-example/trait/ops.html
 use std::ops::{Add, Sub, Mul, Div, Neg};
 
+use rand;
+use rand::{Rng, thread_rng};
+
 #[derive(Copy, Clone)]
 pub struct Vec3(pub f64, pub f64, pub f64);
 
 impl Vec3 {
-    pub fn new(x: f64, y: f64, z: f64) -> Self {
+    pub const fn new(x: f64, y: f64, z: f64) -> Self {
         return Vec3(x, y, z);
     }
 
@@ -33,6 +36,12 @@ impl Vec3 {
     pub fn length(&self) -> f64 {
         return self.length_squared().sqrt();
     }
+
+    pub fn unit(&self) -> Vec3 {
+        return (*self).clone() / self.length();
+    }
+
+    pub const EMPTY: Vec3 = Vec3::new(0.0, 0.0, 0.0);
 }
 
 impl Add for Vec3 {
@@ -87,4 +96,32 @@ impl Neg for Vec3 {
 
 pub fn dot(a: Vec3, b: Vec3) -> f64 {
     return (a * b).sum();
+}
+
+pub fn random_vec3() -> Vec3 {
+    return Vec3::new(rand::random::<f64>(), rand::random::<f64>(), rand::random::<f64>());
+}
+
+pub fn random_range_vec3(min: f64, max: f64) -> Vec3 {
+    let mut rng = thread_rng();
+    return Vec3::new(rng.gen_range(min..max), rng.gen_range(min..max), rng.gen_range(min..max));
+}
+
+pub fn random_unit_hemisphere_vec3() -> Vec3 {
+    while true {
+        let p = random_range_vec3(-1.0, 1.0);
+        if p.length_squared() < 1.0 {
+            return p;
+        }
+    }
+    return Vec3::new(0.0, 0.0, 0.0);
+}
+
+pub fn random_on_hemisphere_vec3(normal: Vec3) -> Vec3 {
+    let r = random_unit_hemisphere_vec3();
+    return if dot(r, normal) > 0.0 {
+        r
+    } else {
+        -r
+    }
 }
