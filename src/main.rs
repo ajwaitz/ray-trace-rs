@@ -1,42 +1,21 @@
 mod vec3;
+mod interval;
+mod buffer;
+
 use vec3::{Vec3, dot, random_on_hemisphere_vec3};
+use interval::{Interval};
 
 use std::vec::Vec;
 
 use std::fs::File;
 use std::io::Write;
 
-use std::sync::{Arc};
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 use rand::{thread_rng, Rng};
+use rand::rngs::ThreadRng;
 use std::time;
-
-struct Interval {
-    min: f64,
-    max: f64
-}
-
-impl Interval {
-    const fn new(min: f64, max: f64) -> Self {
-        return Self { min, max }
-    }
-
-    fn size(&self) -> f64 {
-        return self.max - self.min;
-    }
-
-    fn contains(&self, x: f64) -> bool {
-        return self.min <= x && x <= self.max;
-    }
-
-    fn surrounds(&self, x: f64) -> bool {
-        return self.min < x && x < self.max;
-    }
-
-    const EMPTY: Interval = Interval::new(f64::INFINITY, -f64::INFINITY);
-    const MAX: Interval = Interval::new(-f64::INFINITY, f64::INFINITY);
-    const FORWARD: Interval = Interval::new(0.0, f64::INFINITY);
-}
 
 struct Ray {
     origin: Vec3,
@@ -120,6 +99,7 @@ impl Hittable for Sphere {
     }
 }
 
+#[derive(Clone)]
 struct HittableList {
     vec: Vec<Arc<dyn Hittable>>
 }
@@ -226,6 +206,25 @@ impl Camera {
 
         return buf;
     }
+
+    fn render_pixel(&self, world: &HittableList, rng: &mut ThreadRng, i: i64, j: i64) -> Vec3 {
+        let pixel_center = self.pixel00_loc + (self.pixel_delta_u * (i as f64)) + (self
+            .pixel_delta_v * (j as
+            f64));
+
+        let mut color = Vec3::new(0.0, 0.0, 0.0);
+        for s in 0..self.samples_per_pixel {
+            let x_noise = rng.gen_range(-0.5..0.5);
+            let y_noise = rng.gen_range(-0.5..0.5);
+            let new_pixel_center = pixel_center + self.pixel_delta_u *
+                x_noise + self.pixel_delta_v * y_noise;
+            let ray_dir = new_pixel_center - self.center;
+            let ray = Ray { origin: self.center, dir: ray_dir };
+            color = color + get_ray_color(&ray, &world, self.max_depth);
+        }
+
+        return color / (self.samples_per_pixel as f64);
+    }
 }
 
 // Assumes [0,1] input
@@ -260,13 +259,71 @@ fn main() {
 
     let camera = Camera::new();
 
-    let mut world = HittableList::new();
-    world.add(Arc::new(Sphere::new(Vec3(0.0, 0.0, -1.0), 0.5)));
-    world.add(Arc::new(Sphere::new(Vec3(0.0, -100.5, -1.0), 100.0)));
+    let n = camera.image_height * camera.image_width * 3;
+    let y_blocks = 8;
+    let block_height = camera.image_height / y_blocks;
+    let block_size = camera.image_width * 3;
 
-    let buf = camera.render(world);
+    let buf = Arc::new(Mutex::new(vec![0.0; n as usize]));
 
-    file.write_all(buf.as_ref()).unwrap();
+    let mut handles = vec![];
+    // iterate over blocks
+    for j in 0..y_blocks {
+        let buf_clone = Arc::clone(&buf);
+        let block = j;
+        // let mut rng = thread_rng();
+        let width = camera.image_width;
+        // let local_world = world.clone();
+        let handle = thread::spawn(move || {
+            let camera = Camera::new();
+            let mut world = HittableList::new();
+            world.add(Arc::new(Sphere::new(Vec3(0.0, 0.0, -1.0), 0.5)));
+            world.add(Arc::new(Sphere::new(Vec3(0.0, -100.5, -1.0), 100.0)));
+
+            let mut rng = thread_rng();
+
+            let q = block_height * block_size * 3;
+            let mut local_buf = vec![0.0; q as usize];
+
+            // iterate internally on block
+            for y in 0..block_height {
+                for x in 0..width {
+                    let c = camera.render_pixel(&world, &mut rng,
+                                                x,
+                                                block * block_height + y);
+                    local_buf[(y * block_size + x * 3) as usize] = c.x();
+                    local_buf[(y * block_size + x * 3 + 1) as usize] = c.y();
+                    local_buf[(y * block_size + x * 3 + 2) as usize] = c.z();
+                }
+            }
+
+            let mut buf = buf_clone.lock().unwrap();
+            // not convinced this will work
+            buf[((block * block_size) as usize)..(((block + block_height) * block_size) as usize)].copy_from_slice(&local_buf);
+        });
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    let buf = buf.lock().unwrap();
+
+    let mut str_buf: String = String::new();
+    str_buf.push_str(format!("P3\n{} {}\n255\n", camera.image_width, camera.image_width).as_str());
+
+    for j in 0..camera.image_height {
+        for i in 0..camera.image_width {
+            let x = buf[(j * block_size + i * 3) as usize];
+            let y = buf[(j * block_size + i * 3 + 1) as usize];
+            let z = buf[(j * block_size + i * 3 + 2) as usize];
+            write_color(&mut str_buf, Vec3::new(x, y, z));
+        }
+        write_new_line(&mut str_buf);
+    }
+
+    file.write_all(str_buf.as_ref()).unwrap();
 
     println!("Done! {} s", start.elapsed().as_secs());
 }
