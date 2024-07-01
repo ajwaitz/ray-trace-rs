@@ -1,9 +1,9 @@
 // Operator overloading
 // https://doc.rust-lang.org/rust-by-example/trait/ops.html
-use std::ops::{Add, Sub, Mul, Div, Neg};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 use rand;
-use rand::{Rng, thread_rng};
+use rand::{thread_rng, Rng};
 
 #[derive(Copy, Clone)]
 pub struct Vec3(pub f64, pub f64, pub f64);
@@ -70,7 +70,6 @@ impl Sub<f64> for Vec3 {
     }
 }
 
-
 impl Mul for Vec3 {
     type Output = Self;
     fn mul(self, rhs: Vec3) -> Self {
@@ -104,12 +103,20 @@ pub fn dot(a: Vec3, b: Vec3) -> f64 {
 }
 
 pub fn random_vec3() -> Vec3 {
-    return Vec3::new(rand::random::<f64>(), rand::random::<f64>(), rand::random::<f64>());
+    return Vec3::new(
+        rand::random::<f64>(),
+        rand::random::<f64>(),
+        rand::random::<f64>(),
+    );
 }
 
 pub fn random_range_vec3(min: f64, max: f64) -> Vec3 {
     let mut rng = thread_rng();
-    return Vec3::new(rng.gen_range(min..max), rng.gen_range(min..max), rng.gen_range(min..max));
+    return Vec3::new(
+        rng.gen_range(min..max),
+        rng.gen_range(min..max),
+        rng.gen_range(min..max),
+    );
 }
 
 pub fn random_unit_vec3() -> Vec3 {
@@ -125,11 +132,7 @@ pub fn random_unit_vec3() -> Vec3 {
 
 pub fn random_on_hemisphere_vec3(normal: Vec3) -> Vec3 {
     let r = random_unit_vec3();
-    return if dot(r, normal) > 0.0 {
-        r
-    } else {
-        -r
-    }
+    return if dot(r, normal) > 0.0 { r } else { -r };
 }
 
 pub fn reflect(v: Vec3, n: Vec3) -> Vec3 {

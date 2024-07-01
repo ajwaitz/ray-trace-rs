@@ -1,11 +1,11 @@
-use std::sync::Arc;
 use crate::interval::Interval;
+use crate::material::{Lambertian, Material, Metal};
 use crate::vec3::{dot, Vec3};
-use crate::material::{Material, Lambertian, Metal};
+use std::sync::Arc;
 
 pub struct Ray {
     pub origin: Vec3,
-    pub dir: Vec3
+    pub dir: Vec3,
 }
 
 impl Ray {
@@ -25,18 +25,27 @@ pub struct HitRecord {
     pub point: Vec3,
     pub normal: Vec3,
     pub front_face: bool,
-    pub material: Arc<dyn Material>
+    pub material: Arc<dyn Material>,
 }
 
 impl HitRecord {
     pub fn new() -> Self {
-        return Self { t: 0.0, point: Vec3(0.0, 0.0, 0.0), normal: Vec3(0.0, 0.0, 0.0), front_face:
-        false, material: Arc::new(Lambertian::new(Vec3::EMPTY)) };
+        return Self {
+            t: 0.0,
+            point: Vec3(0.0, 0.0, 0.0),
+            normal: Vec3(0.0, 0.0, 0.0),
+            front_face: false,
+            material: Arc::new(Lambertian::new(Vec3::EMPTY)),
+        };
     }
 
     pub fn set_face_normal(&mut self, ray: &Ray, outward_normal: Vec3) {
         self.front_face = dot(ray.dir, outward_normal) < 0.0;
-        self.normal = if self.front_face { outward_normal } else { -outward_normal };
+        self.normal = if self.front_face {
+            outward_normal
+        } else {
+            -outward_normal
+        };
     }
 }
 
@@ -46,7 +55,7 @@ pub trait Hittable: Send + Sync {
 
 #[derive(Clone)]
 pub struct HittableList {
-    pub vec: Vec<Arc<dyn Hittable>>
+    pub vec: Vec<Arc<dyn Hittable>>,
 }
 
 impl HittableList {
@@ -64,7 +73,11 @@ impl HittableList {
         let mut closest_so_far = interval.max;
 
         for s in self.vec.iter() {
-            if (*s).hit(ray, Interval::new(interval.min, closest_so_far), &mut temp_rec) {
+            if (*s).hit(
+                ray,
+                Interval::new(interval.min, closest_so_far),
+                &mut temp_rec,
+            ) {
                 hit_anything = true;
                 closest_so_far = temp_rec.t;
                 *rec = temp_rec.clone();
@@ -79,18 +92,22 @@ impl HittableList {
 pub struct Sphere {
     pub center: Vec3,
     pub radius: f64,
-    pub material: Arc<dyn Material>
+    pub material: Arc<dyn Material>,
 }
 
 impl Sphere {
     pub fn new(center: Vec3, radius: f64, material: Arc<dyn Material>) -> Self {
-        return Self { center, radius, material };
+        return Self {
+            center,
+            radius,
+            material,
+        };
     }
 }
 
 impl Hittable for Sphere {
     fn hit(&self, ray: &Ray, interval: Interval, rec: &mut HitRecord) -> bool {
-        let oc =  self.center - ray.origin;
+        let oc = self.center - ray.origin;
 
         let a = ray.dir.length_squared();
         let h = dot(ray.dir, oc);
