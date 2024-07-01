@@ -3,19 +3,20 @@ mod interval;
 mod buffer;
 mod camera;
 mod world;
+mod material;
 
 use camera::Camera;
 use world::{HittableList, Sphere};
+use material::{Material, Lambertian, Metal};
 
 use vec3::Vec3;
 
 use std::fs::File;
 use std::io::Write;
 
-use std::sync::{Arc, Mutex};
-use std::thread;
+use std::sync::{Arc};
 
-use rand::{thread_rng, Rng};
+use rand::{Rng};
 use std::time;
 
 // Assumes [0,1] input
@@ -41,8 +42,18 @@ fn main() {
     let camera = Camera::new();
 
     let mut world = HittableList::new();
-    world.add(Arc::new(Sphere::new(Vec3(0.0, 0.0, -1.0), 0.5)));
-    world.add(Arc::new(Sphere::new(Vec3(0.0, -100.5, -1.0), 100.0)));
+
+    // Materials
+    let material_ground = Arc::new(Lambertian::new(Vec3::new(0.8, 0.8, 0.0)));
+    let material_center = Arc::new(Lambertian::new(Vec3::new(0.1, 0.2, 0.5)));
+    let material_left = Arc::new(Metal::new(Vec3::new(0.8, 0.8, 0.8)));
+    let material_right = Arc::new(Metal::new(Vec3::new(0.8, 0.6, 0.2)));
+
+    // Scene objects
+    world.add(Arc::new(Sphere::new(Vec3(0.0, -100.5, -1.0), 100.0, material_ground)));
+    world.add(Arc::new(Sphere::new(Vec3(0.0, 0.0, -1.2), 0.5, material_center)));
+    world.add(Arc::new(Sphere::new(Vec3(-1.0, 0.0, -1.0), 0.5, material_left)));
+    world.add(Arc::new(Sphere::new(Vec3(1.0, 0.0, -1.0), 0.5, material_right)));
 
     let str_buf = camera.parallel_render(16, world);
 

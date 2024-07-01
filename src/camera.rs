@@ -52,14 +52,20 @@ impl Camera {
         return cam;
     }
 
-    fn get_ray_color(&self, ray: &Ray, world: &HittableList, depth: i64) -> Vec3 {
+    fn ray_color(&self, ray: &Ray, world: &HittableList, depth: i64) -> Vec3 {
         if depth < 0 {
             return Vec3::EMPTY;
         }
         let mut hit_record = HitRecord::new();
         if world.hit(ray, Interval::ALMOST_FORWARD, &mut hit_record) {
-            let dir = hit_record.normal + random_unit_vec3();
-            return self.get_ray_color(&Ray::new(hit_record.point, dir), world, depth - 1) * 0.5;
+            let mut scattered = Ray::EMPTY;
+            let mut attenuation = Vec3::EMPTY;
+
+            if hit_record.material.scatter(&ray, &hit_record, &mut attenuation, &mut scattered) {
+                return attenuation * self.ray_color(&scattered, world, depth - 1);
+            }
+
+            return Vec3::EMPTY;
         }
         let unit_dir = ray.dir / ray.dir.x().abs().max(ray.dir.y().abs()).max(ray.dir.z().abs());
         let t = 0.5 * (unit_dir.y() + 1.0);
@@ -88,7 +94,7 @@ impl Camera {
                         x_noise + self.pixel_delta_v * y_noise;
                     let ray_dir = new_pixel_center - self.center;
                     let ray = Ray { origin: self.center, dir: ray_dir };
-                    color = color + self.get_ray_color(&ray, &world, self.max_depth);
+                    color = color + self.ray_color(&ray, &world, self.max_depth);
                 }
 
                 write_color(&mut buf, color / (self.samples_per_pixel as f64));
@@ -112,7 +118,7 @@ impl Camera {
                 x_noise + self.pixel_delta_v * y_noise;
             let ray_dir = new_pixel_center - self.center;
             let ray = Ray { origin: self.center, dir: ray_dir };
-            color = color + self.get_ray_color(&ray, &world, self.max_depth);
+            color = color + self.ray_color(&ray, &world, self.max_depth);
         }
 
         return color / (self.samples_per_pixel as f64);

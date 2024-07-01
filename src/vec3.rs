@@ -41,6 +41,11 @@ impl Vec3 {
         return (*self).clone() / self.length();
     }
 
+    pub fn near_zero(&self) -> bool {
+        let eps = 1e-8;
+        return self.x().abs() < eps && self.y().abs() < eps && self.z().abs() < eps;
+    }
+
     pub const EMPTY: Vec3 = Vec3::new(0.0, 0.0, 0.0);
 }
 
@@ -125,4 +130,8 @@ pub fn random_on_hemisphere_vec3(normal: Vec3) -> Vec3 {
     } else {
         -r
     }
+}
+
+pub fn reflect(v: Vec3, n: Vec3) -> Vec3 {
+    return v - n * dot(v, n) * 2.0;
 }
