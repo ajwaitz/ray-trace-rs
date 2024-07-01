@@ -1,7 +1,7 @@
 use crate::interval::Interval;
 use crate::vec3::{random_unit_vec3, Vec3};
-use crate::world::{HitRecord, HittableList, Ray, Sphere};
-use crate::{write_color, write_new_line};
+use crate::world::{HitRecord, HittableList, Ray, Sphere, HitResult};
+use crate::util::{write_color, write_new_line};
 use rand::prelude::ThreadRng;
 use rand::{thread_rng, Rng};
 use std::sync::{Arc, Mutex};
@@ -55,8 +55,7 @@ impl Camera {
         if depth < 0 {
             return Vec3::EMPTY;
         }
-        let mut hit_record = HitRecord::new();
-        if world.hit(ray, Interval::ALMOST_FORWARD, &mut hit_record) {
+        if let HitResult::Hit(hit_record) = world.hit(ray, Interval::ALMOST_FORWARD) {
             let mut scattered = Ray::EMPTY;
             let mut attenuation = Vec3::EMPTY;
 

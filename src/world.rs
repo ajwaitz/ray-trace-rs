@@ -49,8 +49,13 @@ impl HitRecord {
     }
 }
 
+pub enum HitResult {
+    Hit(HitRecord),
+    Miss
+}
+
 pub trait Hittable: Send + Sync {
-    fn hit(&self, ray: &Ray, interval: Interval, rec: &mut HitRecord) -> bool;
+    fn hit(&self, ray: &Ray, interval: Interval) -> HitResult;
 }
 
 #[derive(Clone)]
@@ -67,24 +72,28 @@ impl HittableList {
         self.vec.push(s);
     }
 
-    pub fn hit(&self, ray: &Ray, interval: Interval, rec: &mut HitRecord) -> bool {
-        let mut temp_rec = HitRecord::new();
+    pub fn hit(&self, ray: &Ray, interval: Interval) -> HitResult {
+        let mut rec = HitRecord::new();
         let mut hit_anything = false;
         let mut closest_so_far = interval.max;
 
         for s in self.vec.iter() {
-            if (*s).hit(
+            let hit = (*s).hit(
                 ray,
-                Interval::new(interval.min, closest_so_far),
-                &mut temp_rec,
-            ) {
+                Interval::new(interval.min, closest_so_far)
+            );
+            if let HitResult::Hit(temp_rec) = hit {
                 hit_anything = true;
                 closest_so_far = temp_rec.t;
-                *rec = temp_rec.clone();
+                rec = temp_rec.clone();
             }
         }
 
-        return hit_anything;
+        return if hit_anything {
+            HitResult::Hit(rec)
+        } else {
+            HitResult::Miss
+        }
     }
 }
 
@@ -106,7 +115,7 @@ impl Sphere {
 }
 
 impl Hittable for Sphere {
-    fn hit(&self, ray: &Ray, interval: Interval, rec: &mut HitRecord) -> bool {
+    fn hit(&self, ray: &Ray, interval: Interval) -> HitResult {
         let oc = self.center - ray.origin;
 
         let a = ray.dir.length_squared();
@@ -115,7 +124,7 @@ impl Hittable for Sphere {
         let discriminant = h * h - a * c;
 
         if discriminant < 0.0 {
-            return false;
+            return HitResult::Miss;
         }
 
         let sqrtd = discriminant.sqrt();
@@ -123,9 +132,11 @@ impl Hittable for Sphere {
         if !interval.surrounds(root) {
             root = (h + sqrtd) / a;
             if !interval.surrounds(root) {
-                return false;
+                return HitResult::Miss;
             }
         }
+
+        let mut rec = HitRecord::new();
 
         rec.t = root;
         rec.point = ray.at(rec.t);
@@ -133,6 +144,6 @@ impl Hittable for Sphere {
         rec.set_face_normal(ray, outward_normal);
         rec.material = Arc::clone(&self.material);
 
-        return true;
+        return HitResult::Hit(rec);
     }
 }

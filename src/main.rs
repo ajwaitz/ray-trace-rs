@@ -1,9 +1,9 @@
-mod buffer;
 mod camera;
 mod interval;
 mod material;
 mod vec3;
 mod world;
+mod util;
 
 use camera::Camera;
 use material::{Lambertian, Material, Metal};
@@ -18,22 +18,6 @@ use std::sync::Arc;
 
 use rand::Rng;
 use std::time;
-
-// Assumes [0,1] input
-fn write_color(buf: &mut String, color: Vec3) {
-    let r: i64 = (255.0 * liner_to_gamma(color.x())).trunc() as i64;
-    let g: i64 = (255.0 * liner_to_gamma(color.y())).trunc() as i64;
-    let b: i64 = (255.0 * liner_to_gamma(color.z())).trunc() as i64;
-    buf.push_str(format!("{} {} {} ", r, g, b).as_str());
-}
-
-fn write_new_line(buf: &mut String) {
-    buf.push_str("\n");
-}
-
-fn liner_to_gamma(x: f64) -> f64 {
-    return if x > 0.0 { x.sqrt() } else { 0.0 };
-}
 
 fn main() {
     let start = time::Instant::now();
