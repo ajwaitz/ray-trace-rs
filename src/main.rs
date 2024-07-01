@@ -260,7 +260,7 @@ fn main() {
     let camera = Camera::new();
 
     let n = camera.image_height * camera.image_width * 3;
-    let y_blocks = 8;
+    let y_blocks = 16;
     let block_height = camera.image_height / y_blocks;
     let block_size = camera.image_width * 3;
 
@@ -271,9 +271,7 @@ fn main() {
     for j in 0..y_blocks {
         let buf_clone = Arc::clone(&buf);
         let block = j;
-        // let mut rng = thread_rng();
         let width = camera.image_width;
-        // let local_world = world.clone();
         let handle = thread::spawn(move || {
             let camera = Camera::new();
             let mut world = HittableList::new();
@@ -282,7 +280,7 @@ fn main() {
 
             let mut rng = thread_rng();
 
-            let q = block_height * block_size * 3;
+            let q = block_height * block_size;
             let mut local_buf = vec![0.0; q as usize];
 
             // iterate internally on block
@@ -299,7 +297,9 @@ fn main() {
 
             let mut buf = buf_clone.lock().unwrap();
             // not convinced this will work
-            buf[((block * block_size) as usize)..(((block + block_height) * block_size) as usize)].copy_from_slice(&local_buf);
+            buf[((block * block_height * block_size) as usize)..((((block + 1) * block_height) *
+                block_size) as
+                usize)].copy_from_slice(&local_buf);
         });
         handles.push(handle);
     }
@@ -310,6 +310,7 @@ fn main() {
 
     let buf = buf.lock().unwrap();
 
+    // Unwrapping buffer to a string
     let mut str_buf: String = String::new();
     str_buf.push_str(format!("P3\n{} {}\n255\n", camera.image_width, camera.image_width).as_str());
 
