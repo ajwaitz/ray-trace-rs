@@ -1,7 +1,8 @@
 use crate::interval::Interval;
-use crate::vec3::{random_unit_vec3, Vec3};
-use crate::world::{HitRecord, HittableList, Ray, Sphere, HitResult};
+use crate::vec3::{Vec3};
+use crate::world::{HittableList, Ray, HitResult};
 use crate::util::{write_color, write_new_line};
+use crate::material::ScatterResult;
 use rand::prelude::ThreadRng;
 use rand::{thread_rng, Rng};
 use std::sync::{Arc, Mutex};
@@ -56,12 +57,9 @@ impl Camera {
             return Vec3::EMPTY;
         }
         if let HitResult::Hit(hit_record) = world.hit(ray, Interval::ALMOST_FORWARD) {
-            let mut scattered = Ray::EMPTY;
-            let mut attenuation = Vec3::EMPTY;
-
-            if hit_record
+            if let ScatterResult::Scatter(scattered, attenuation) = hit_record
                 .material
-                .scatter(&ray, &hit_record, &mut attenuation, &mut scattered)
+                .scatter(&ray, &hit_record)
             {
                 return attenuation * self.ray_color(&scattered, world, depth - 1);
             }
