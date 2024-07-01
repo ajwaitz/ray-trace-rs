@@ -7,7 +7,7 @@ mod util;
 
 use camera::Camera;
 use material::{Lambertian, Material, Metal};
-use world::{HittableList, Sphere};
+use world::{HittableList, Sphere, Triangle};
 
 use vec3::Vec3;
 
@@ -39,20 +39,36 @@ fn main() {
         100.0,
         material_ground,
     )));
+    // world.add(Arc::new(Sphere::new(
+    //     Vec3(0.0, 0.0, -1.2),
+    //     0.5,
+    //     material_center,
+    // )));
+    // world.add(Arc::new(Sphere::new(
+    //     Vec3(-1.0, 0.0, -1.0),
+    //     0.5,
+    //     material_left,
+    // )));
+    // world.add(Arc::new(Sphere::new(
+    //     Vec3(1.0, 0.0, -1.0),
+    //     0.5,
+    //     material_right,
+    // )));
     world.add(Arc::new(Sphere::new(
-        Vec3(0.0, 0.0, -1.2),
-        0.5,
-        material_center,
-    )));
-    world.add(Arc::new(Sphere::new(
-        Vec3(-1.0, 0.0, -1.0),
-        0.5,
+        Vec3(0.5, 0.0, -1.2),
+        0.05,
         material_left,
     )));
     world.add(Arc::new(Sphere::new(
-        Vec3(1.0, 0.0, -1.0),
-        0.5,
+        Vec3(-0.5, 0.0, -1.2),
+        0.05,
         material_right,
+    )));
+    world.add(Arc::new(Triangle::new(
+        Vec3(0.7, -0.2, -1.2),
+        Vec3(-0.7, -0.2, -0.8),
+        Vec3(0.0, 0.7, -1.5),
+        material_center
     )));
 
     let str_buf = camera.parallel_render(16, world);

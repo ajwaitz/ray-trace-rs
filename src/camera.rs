@@ -32,7 +32,7 @@ impl Camera {
             pixel_delta_u: Vec3::new(0.0, 0.0, 0.0),
             pixel_delta_v: Vec3::new(0.0, 0.0, 0.0),
             samples_per_pixel: 10,
-            max_depth: 50,
+            max_depth: 10,
         };
 
         let focal_length = 1.0;

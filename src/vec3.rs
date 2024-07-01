@@ -102,6 +102,17 @@ pub fn dot(a: Vec3, b: Vec3) -> f64 {
     return (a * b).sum();
 }
 
+pub fn cross(a: Vec3, b: Vec3) -> Vec3 {
+    let x = a.y() * b.z() - a.z() * b.y();
+    let y = a.z() * b.x() - a.x() * b.z();
+    let z = a.x() * b.y() - a.y() * b.x();
+    return Vec3::new(x, y, z);
+}
+
+pub fn det(c1: Vec3, c2: Vec3, c3: Vec3) -> f64 {
+    return dot(c1, cross(c2, c3));
+}
+
 pub fn random_vec3() -> Vec3 {
     return Vec3::new(
         rand::random::<f64>(),

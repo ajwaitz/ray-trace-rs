@@ -1,6 +1,6 @@
 use crate::interval::Interval;
 use crate::material::{Lambertian, Material, Metal};
-use crate::vec3::{dot, Vec3};
+use crate::vec3::{dot, cross, det, Vec3};
 use std::sync::Arc;
 
 pub struct Ray {
@@ -142,6 +142,51 @@ impl Hittable for Sphere {
         rec.point = ray.at(rec.t);
         let outward_normal = (rec.point - self.center) / self.radius;
         rec.set_face_normal(ray, outward_normal);
+        rec.material = Arc::clone(&self.material);
+
+        return HitResult::Hit(rec);
+    }
+}
+
+#[derive(Clone)]
+pub struct Triangle {
+    pub a: Vec3,
+    pub b: Vec3,
+    pub c: Vec3,
+    pub material: Arc<dyn Material>
+}
+
+impl Triangle {
+    pub const fn new(a: Vec3, b: Vec3, c: Vec3, material: Arc<dyn Material>) -> Self {
+        return Self {a, b, c, material};
+    }
+}
+
+impl Hittable for Triangle {
+    fn hit(&self, ray: &Ray, interval: Interval) -> HitResult {
+        let ab = self.b - self.a;
+        let ac = self.c - self.a;
+        let normal = cross(ab, ac).unit();
+
+        if dot(ray.dir, normal) == 0.0 {
+            return HitResult::Miss;
+        }
+
+        let b = ray.origin - self.a;
+
+        let det_a = det(-ray.dir, ab, ac);
+        let t = det(b, ab, ac) / det_a;
+        let u = det(-ray.dir, b, ac) / det_a;
+        let v = det(-ray.dir, ab, b) / det_a;
+
+        if u < 0.0 || v < 0.0 || u + v > 1.0 || !interval.contains(t){
+            return HitResult::Miss;
+        }
+
+        let mut rec = HitRecord::new();
+        rec.t = t;
+        rec.point = ray.at(rec.t);
+        rec.set_face_normal(ray, normal);
         rec.material = Arc::clone(&self.material);
 
         return HitResult::Hit(rec);
