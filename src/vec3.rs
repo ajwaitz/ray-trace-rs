@@ -107,18 +107,19 @@ pub fn random_range_vec3(min: f64, max: f64) -> Vec3 {
     return Vec3::new(rng.gen_range(min..max), rng.gen_range(min..max), rng.gen_range(min..max));
 }
 
-pub fn random_unit_hemisphere_vec3() -> Vec3 {
+pub fn random_unit_vec3() -> Vec3 {
     while true {
         let p = random_range_vec3(-1.0, 1.0);
         if p.length_squared() < 1.0 {
             return p;
         }
     }
+    // This never runs, but the Rust compiler gets mad not included
     return Vec3::new(0.0, 0.0, 0.0);
 }
 
 pub fn random_on_hemisphere_vec3(normal: Vec3) -> Vec3 {
-    let r = random_unit_hemisphere_vec3();
+    let r = random_unit_vec3();
     return if dot(r, normal) > 0.0 {
         r
     } else {

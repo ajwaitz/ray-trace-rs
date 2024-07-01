@@ -23,4 +23,5 @@ impl Interval {
     pub const EMPTY: Interval = Interval::new(f64::INFINITY, -f64::INFINITY);
     pub const MAX: Interval = Interval::new(-f64::INFINITY, f64::INFINITY);
     pub const FORWARD: Interval = Interval::new(0.0, f64::INFINITY);
+    pub const ALMOST_FORWARD: Interval = Interval::new(0.001, f64::INFINITY);
 }
