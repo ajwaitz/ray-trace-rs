@@ -39,21 +39,21 @@ fn main() {
         100.0,
         &material_ground,
     )));
-    // world.add(Arc::new(Sphere::new(
-    //     Vec3(0.0, 0.0, -1.2),
-    //     0.5,
-    //     material_center,
-    // )));
-    // world.add(Arc::new(Sphere::new(
-    //     Vec3(-1.0, 0.0, -1.0),
-    //     0.5,
-    //     material_left,
-    // )));
-    // world.add(Arc::new(Sphere::new(
-    //     Vec3(1.0, 0.0, -1.0),
-    //     0.5,
-    //     material_right,
-    // )));
+    world.add(Arc::new(Sphere::new(
+        Vec3(0.0, 0.0, -1.2),
+        0.5,
+        &material_center,
+    )));
+    world.add(Arc::new(Sphere::new(
+        Vec3(-1.0, 0.0, -1.0),
+        0.5,
+        &material_left,
+    )));
+    world.add(Arc::new(Sphere::new(
+        Vec3(1.0, 0.0, -1.0),
+        0.5,
+        &material_right,
+    )));
     world.add(Arc::new(Sphere::new(
         Vec3(0.5, 0.0, -1.2),
         0.05,
@@ -71,7 +71,9 @@ fn main() {
         &material_right,
     )));
 
-    let str_buf = camera.parallel_render(16, world);
+    let world_ptr = Arc::new(world);
+
+    let str_buf = camera.parallel_render(16, &world_ptr);
 
     file.write_all(str_buf.as_ref()).unwrap();
 

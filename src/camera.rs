@@ -134,13 +134,13 @@ impl Camera {
         return color / (self.samples_per_pixel as f64);
     }
 
-    pub fn parallel_render(&self, y_blocks: i64, world: HittableList) -> String {
+    pub fn parallel_render(&self, y_blocks: i64, world: &Arc<HittableList>) -> String {
         let n = self.image_height * self.image_width * 3;
         let block_height = self.image_height / y_blocks;
         let block_size = self.image_width * 3;
 
         let buf = Arc::new(Mutex::new(vec![0.0; n as usize]));
-        let world = Arc::new(world);
+        let world = Arc::clone(world);
 
         let mut handles = vec![];
         // iterate over blocks

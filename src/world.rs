@@ -1,6 +1,6 @@
 use crate::interval::Interval;
-use crate::material::{Lambertian, Material, Metal};
-use crate::vec3::{cross, det, dot, Vec3};
+use crate::material::{Lambertian, Material};
+use crate::vec3::Vec3;
 use std::sync::Arc;
 
 pub struct Ray {
@@ -40,7 +40,7 @@ impl HitRecord {
     }
 
     pub fn set_face_normal(&mut self, ray: &Ray, outward_normal: Vec3) {
-        self.front_face = dot(ray.dir, outward_normal) < 0.0;
+        self.front_face = Vec3::dot(ray.dir, outward_normal) < 0.0;
         self.normal = if self.front_face {
             outward_normal
         } else {
@@ -116,7 +116,7 @@ impl Hittable for Sphere {
         let oc = self.center - ray.origin;
 
         let a = ray.dir.length_squared();
-        let h = dot(ray.dir, oc);
+        let h = Vec3::dot(ray.dir, oc);
         let c = oc.length_squared() - self.radius * self.radius;
         let discriminant = h * h - a * c;
 
@@ -168,18 +168,18 @@ impl Hittable for Triangle {
     fn hit(&self, ray: &Ray, interval: Interval) -> HitResult {
         let ab = self.b - self.a;
         let ac = self.c - self.a;
-        let normal = cross(ab, ac).unit();
+        let normal = Vec3::cross(ab, ac).unit();
 
-        if dot(ray.dir, normal) == 0.0 {
+        if Vec3::dot(ray.dir, normal) == 0.0 {
             return HitResult::Miss;
         }
 
         let b = ray.origin - self.a;
 
-        let det_a = det(-ray.dir, ab, ac);
-        let t = det(b, ab, ac) / det_a;
-        let u = det(-ray.dir, b, ac) / det_a;
-        let v = det(-ray.dir, ab, b) / det_a;
+        let det_a = Vec3::det(-ray.dir, ab, ac);
+        let t = Vec3::det(b, ab, ac) / det_a;
+        let u = Vec3::det(-ray.dir, b, ac) / det_a;
+        let v = Vec3::det(-ray.dir, ab, b) / det_a;
 
         if u < 0.0 || v < 0.0 || u + v > 1.0 || !interval.contains(t) {
             return HitResult::Miss;

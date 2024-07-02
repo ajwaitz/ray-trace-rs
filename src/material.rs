@@ -1,5 +1,5 @@
-use crate::vec3::{dot, random_unit_vec3, reflect, Vec3};
-use crate::world::{HitRecord, HitResult, Ray};
+use crate::vec3::Vec3;
+use crate::world::{HitRecord, Ray};
 
 pub enum ScatterResult {
     Scatter(Ray, Vec3),
@@ -22,7 +22,7 @@ impl Lambertian {
 
 impl Material for Lambertian {
     fn scatter(&self, ray: &Ray, hit_record: &HitRecord) -> ScatterResult {
-        let mut dir = hit_record.normal + random_unit_vec3();
+        let mut dir = hit_record.normal + Vec3::random_on_sphere();
 
         // Catch degenerate scatter direction
         if dir.near_zero() {
@@ -49,10 +49,13 @@ impl Metal {
 
 impl Material for Metal {
     fn scatter(&self, ray: &Ray, hit_record: &HitRecord) -> ScatterResult {
-        let reflected = reflect(ray.dir, hit_record.normal).unit() + random_unit_vec3() * self.fuzz;
+        let reflected = Vec3::reflect(ray.dir, hit_record.normal).unit() + Vec3::random_on_sphere
+            () *
+            self
+            .fuzz;
         let scattered_ray = Ray::new(hit_record.point, reflected);
         let attenuation = self.albedo;
-        return if dot(reflected, hit_record.normal) > 0.0 {
+        return if Vec3::dot(reflected, hit_record.normal) > 0.0 {
             ScatterResult::Scatter(scattered_ray, attenuation)
         } else {
             ScatterResult::NoScatter
