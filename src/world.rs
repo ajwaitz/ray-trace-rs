@@ -1,7 +1,9 @@
 use crate::interval::Interval;
-use crate::material::{Lambertian, Material};
+use crate::material::{Material, Lambertian, Metal};
 use crate::vec3::Vec3;
 use std::sync::Arc;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 
 pub struct Ray {
     pub origin: Vec3,
@@ -192,5 +194,69 @@ impl Hittable for Triangle {
         rec.material = Arc::clone(&self.material);
 
         return HitResult::Hit(rec);
+    }
+}
+
+pub struct Polygon {
+    pub triangles: Vec<Triangle>,
+    vertices: Vec<Vec3>,
+    faces: Vec<(i64, i64, i64)>
+}
+
+impl Polygon {
+    // Does the heavy lifting of parsing a .obj buffer
+    pub fn new(input: BufReader<File>) -> Self {
+        let mut out = Self { triangles: vec![], vertices: vec![], faces: vec![] };
+        let material: Arc<dyn Material> = Arc::new(Metal::new(Vec3::new(0.8, 0.8, 0.8), 0.3));
+
+        for line in input.lines() {
+            let line = line.unwrap();
+            let line: Vec<&str> = line.split(' ').collect();
+
+            if line[0] == "v" {
+                let x = line[1].parse::<f64>().unwrap();
+                let y = line[2].parse::<f64>().unwrap();
+                let z = line[3].parse::<f64>().unwrap();
+                out.vertices.push(Vec3::new(x, y, z));
+            }
+
+            if line[0] == "f" {
+                let x = line[1].parse::<i64>().unwrap() - 1;
+                let y = line[2].parse::<i64>().unwrap() - 1;
+                let z = line[3].parse::<i64>().unwrap() - 1;
+                out.faces.push((x, y, z));
+
+                let a = out.vertices[x as usize];
+                let b = out.vertices[y as usize];
+                let c = out.vertices[z as usize];
+
+                out.triangles.push(Triangle::new(a, b, c, &material));
+            }
+        }
+
+        return out;
+    }
+}
+
+impl Hittable for Polygon {
+    fn hit(&self, ray: &Ray, interval: Interval) -> HitResult {
+        let mut rec = HitRecord::new();
+        let mut hit_anything = false;
+        let mut closest_so_far = interval.max;
+
+        for triangle in self.triangles.iter() {
+            let hit = (*triangle).hit(ray, Interval::new(interval.min, closest_so_far));
+            if let HitResult::Hit(temp_rec) = hit {
+                hit_anything = true;
+                closest_so_far = temp_rec.t;
+                rec = temp_rec.clone();
+            }
+        }
+
+        return if hit_anything {
+            HitResult::Hit(rec)
+        } else {
+            HitResult::Miss
+        };
     }
 }

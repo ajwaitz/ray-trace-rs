@@ -7,9 +7,7 @@ mod world;
 
 use camera::Camera;
 use material::{Lambertian, Material, Metal};
-use world::{HittableList, Sphere, Triangle};
-
-use vec3::Vec3;
+use world::{HittableList, Sphere, Triangle, Polygon};
 
 use std::fs::File;
 use std::io::Write;
@@ -19,6 +17,8 @@ use std::sync::Arc;
 use rand::Rng;
 use std::time;
 
+use std::io::BufReader;
+
 fn main() {
     let start = time::Instant::now();
     let mut file = File::create("test.ppm").unwrap();
@@ -27,53 +27,58 @@ fn main() {
 
     let mut world = HittableList::new();
 
+    let input = BufReader::new(File::open("./src/cow.obj").unwrap());
+    world.add(Arc::new(Polygon::new(input)));
+
+    println!("Done parsing .obj!");
+
     // Materials
-    let material_ground: Arc<dyn Material> = Arc::new(Lambertian::new(Vec3::new(0.8, 0.8, 0.0)));
-    let material_center: Arc<dyn Material> = Arc::new(Metal::new(Vec3::new(0.1, 0.2, 0.5), 0.1));
-    let material_left: Arc<dyn Material> = Arc::new(Metal::new(Vec3::new(0.8, 0.8, 0.8), 0.3));
-    let material_right: Arc<dyn Material> = Arc::new(Metal::new(Vec3::new(0.8, 0.6, 0.2), 1.0));
+    // let material_ground: Arc<dyn Material> = Arc::new(Lambertian::new(Vec3::new(0.8, 0.8, 0.0)));
+    // let material_center: Arc<dyn Material> = Arc::new(Metal::new(Vec3::new(0.1, 0.2, 0.5), 0.1));
+    // let material_left: Arc<dyn Material> = Arc::new(Metal::new(Vec3::new(0.8, 0.8, 0.8), 0.3));
+    // let material_right: Arc<dyn Material> = Arc::new(Metal::new(Vec3::new(0.8, 0.6, 0.2), 1.0));
 
     // Scene objects
-    world.add(Arc::new(Sphere::new(
-        Vec3(0.0, -100.5, -1.0),
-        100.0,
-        &material_ground,
-    )));
-    world.add(Arc::new(Sphere::new(
-        Vec3(0.0, 0.0, -1.2),
-        0.5,
-        &material_center,
-    )));
-    world.add(Arc::new(Sphere::new(
-        Vec3(-1.0, 0.0, -1.0),
-        0.5,
-        &material_left,
-    )));
-    world.add(Arc::new(Sphere::new(
-        Vec3(1.0, 0.0, -1.0),
-        0.5,
-        &material_right,
-    )));
-    world.add(Arc::new(Sphere::new(
-        Vec3(0.5, 0.0, -1.2),
-        0.05,
-        &material_left,
-    )));
-    world.add(Arc::new(Sphere::new(
-        Vec3(-0.5, 0.0, -1.2),
-        0.05,
-        &material_right,
-    )));
-    world.add(Arc::new(Triangle::new(
-        Vec3(0.7, -0.2, -1.2),
-        Vec3(-0.7, -0.2, -0.8),
-        Vec3(0.0, 0.7, -1.5),
-        &material_right,
-    )));
+    // world.add(Arc::new(Sphere::new(
+    //     Vec3(0.0, -100.5, -1.0),
+    //     100.0,
+    //     &material_ground,
+    // )));
+    // world.add(Arc::new(Sphere::new(
+    //     Vec3(0.0, 0.0, -1.2),
+    //     0.5,
+    //     &material_center,
+    // )));
+    // world.add(Arc::new(Sphere::new(
+    //     Vec3(-1.0, 0.0, -1.0),
+    //     0.5,
+    //     &material_left,
+    // )));
+    // world.add(Arc::new(Sphere::new(
+    //     Vec3(1.0, 0.0, -1.0),
+    //     0.5,
+    //     &material_right,
+    // )));
+    // world.add(Arc::new(Sphere::new(
+    //     Vec3(0.5, 0.0, -1.2),
+    //     0.05,
+    //     &material_left,
+    // )));
+    // world.add(Arc::new(Sphere::new(
+    //     Vec3(-0.5, 0.0, -1.2),
+    //     0.05,
+    //     &material_right,
+    // )));
+    // world.add(Arc::new(Triangle::new(
+    //     Vec3(0.7, -0.2, -1.2),
+    //     Vec3(-0.7, -0.2, -0.8),
+    //     Vec3(0.0, 0.7, -1.5),
+    //     &material_right,
+    // )));
 
     let world_ptr = Arc::new(world);
 
-    let str_buf = camera.parallel_render(16, &world_ptr);
+    let str_buf = camera.parallel_render(256, &world_ptr);
 
     file.write_all(str_buf.as_ref()).unwrap();
 

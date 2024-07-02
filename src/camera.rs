@@ -38,7 +38,6 @@ impl Camera {
         let focal_length = 1.0;
         let vh = 2.0;
         let vw = vh * (cam.image_width as f64) / (cam.image_height as f64);
-
         let viewport_u = Vec3::new(vw, 0.0, 0.0);
         let viewport_v = Vec3::new(0.0, -vh, 0.0);
 
@@ -165,6 +164,7 @@ impl Camera {
                         local_buf[(y * block_size + x * 3 + 1) as usize] = c.y();
                         local_buf[(y * block_size + x * 3 + 2) as usize] = c.z();
                     }
+                    println!("Thread {} completed block {}", block, y);
                 }
 
                 let mut buf = buf.lock().unwrap();
