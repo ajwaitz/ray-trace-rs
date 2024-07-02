@@ -1,17 +1,13 @@
-use crate::vec3::{random_unit_vec3, reflect, Vec3, dot};
+use crate::vec3::{dot, random_unit_vec3, reflect, Vec3};
 use crate::world::{HitRecord, HitResult, Ray};
 
 pub enum ScatterResult {
     Scatter(Ray, Vec3),
-    NoScatter
+    NoScatter,
 }
 
 pub trait Material: Send + Sync {
-    fn scatter(
-        &self,
-        ray: &Ray,
-        hit_record: &HitRecord
-    ) -> ScatterResult;
+    fn scatter(&self, ray: &Ray, hit_record: &HitRecord) -> ScatterResult;
 }
 
 pub struct Lambertian {
@@ -25,11 +21,7 @@ impl Lambertian {
 }
 
 impl Material for Lambertian {
-    fn scatter(
-        &self,
-        ray: &Ray,
-        hit_record: &HitRecord
-    ) -> ScatterResult {
+    fn scatter(&self, ray: &Ray, hit_record: &HitRecord) -> ScatterResult {
         let mut dir = hit_record.normal + random_unit_vec3();
 
         // Catch degenerate scatter direction
@@ -46,7 +38,7 @@ impl Material for Lambertian {
 
 pub struct Metal {
     albedo: Vec3,
-    fuzz: f64
+    fuzz: f64,
 }
 
 impl Metal {
@@ -56,11 +48,7 @@ impl Metal {
 }
 
 impl Material for Metal {
-    fn scatter(
-        &self,
-        ray: &Ray,
-        hit_record: &HitRecord
-    ) -> ScatterResult {
+    fn scatter(&self, ray: &Ray, hit_record: &HitRecord) -> ScatterResult {
         let reflected = reflect(ray.dir, hit_record.normal).unit() + random_unit_vec3() * self.fuzz;
         let scattered_ray = Ray::new(hit_record.point, reflected);
         let attenuation = self.albedo;
@@ -68,6 +56,6 @@ impl Material for Metal {
             ScatterResult::Scatter(scattered_ray, attenuation)
         } else {
             ScatterResult::NoScatter
-        }
+        };
     }
 }

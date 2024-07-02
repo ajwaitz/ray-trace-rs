@@ -1,6 +1,6 @@
 use crate::interval::Interval;
 use crate::material::{Lambertian, Material, Metal};
-use crate::vec3::{dot, cross, det, Vec3};
+use crate::vec3::{cross, det, dot, Vec3};
 use std::sync::Arc;
 
 pub struct Ray {
@@ -51,7 +51,7 @@ impl HitRecord {
 
 pub enum HitResult {
     Hit(HitRecord),
-    Miss
+    Miss,
 }
 
 pub trait Hittable: Send + Sync {
@@ -78,10 +78,7 @@ impl HittableList {
         let mut closest_so_far = interval.max;
 
         for s in self.vec.iter() {
-            let hit = (*s).hit(
-                ray,
-                Interval::new(interval.min, closest_so_far)
-            );
+            let hit = (*s).hit(ray, Interval::new(interval.min, closest_so_far));
             if let HitResult::Hit(temp_rec) = hit {
                 hit_anything = true;
                 closest_so_far = temp_rec.t;
@@ -93,7 +90,7 @@ impl HittableList {
             HitResult::Hit(rec)
         } else {
             HitResult::Miss
-        }
+        };
     }
 }
 
@@ -105,11 +102,11 @@ pub struct Sphere {
 }
 
 impl Sphere {
-    pub fn new(center: Vec3, radius: f64, material: Arc<dyn Material>) -> Self {
+    pub fn new(center: Vec3, radius: f64, material: &Arc<dyn Material>) -> Self {
         return Self {
             center,
             radius,
-            material,
+            material: Arc::clone(material),
         };
     }
 }
@@ -153,12 +150,17 @@ pub struct Triangle {
     pub a: Vec3,
     pub b: Vec3,
     pub c: Vec3,
-    pub material: Arc<dyn Material>
+    pub material: Arc<dyn Material>,
 }
 
 impl Triangle {
-    pub const fn new(a: Vec3, b: Vec3, c: Vec3, material: Arc<dyn Material>) -> Self {
-        return Self {a, b, c, material};
+    pub fn new(a: Vec3, b: Vec3, c: Vec3, material: &Arc<dyn Material>) -> Self {
+        return Self {
+            a,
+            b,
+            c,
+            material: Arc::clone(material),
+        };
     }
 }
 
@@ -179,7 +181,7 @@ impl Hittable for Triangle {
         let u = det(-ray.dir, b, ac) / det_a;
         let v = det(-ray.dir, ab, b) / det_a;
 
-        if u < 0.0 || v < 0.0 || u + v > 1.0 || !interval.contains(t){
+        if u < 0.0 || v < 0.0 || u + v > 1.0 || !interval.contains(t) {
             return HitResult::Miss;
         }
 
