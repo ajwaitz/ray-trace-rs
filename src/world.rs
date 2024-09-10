@@ -211,7 +211,10 @@ impl Polygon {
 
         for line in input.lines() {
             let line = line.unwrap();
-            let line: Vec<&str> = line.split(' ').collect();
+            if line.len() <= 1 {
+                continue;
+            }
+            let line: Vec<&str> = line.split_whitespace().collect();
 
             if line[0] == "v" {
                 let x = line[1].parse::<f64>().unwrap();

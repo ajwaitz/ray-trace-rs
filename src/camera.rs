@@ -133,7 +133,7 @@ impl Camera {
         return color / (self.samples_per_pixel as f64);
     }
 
-    pub fn parallel_render(&self, y_blocks: i64, world: &Arc<HittableList>) -> String {
+    pub fn parallel_render(&self, y_blocks: i64, world: &Arc<HittableList>, verbose: bool) -> String {
         let n = self.image_height * self.image_width * 3;
         let block_height = self.image_height / y_blocks;
         let block_size = self.image_width * 3;
@@ -164,7 +164,9 @@ impl Camera {
                         local_buf[(y * block_size + x * 3 + 1) as usize] = c.y();
                         local_buf[(y * block_size + x * 3 + 2) as usize] = c.z();
                     }
-                    println!("Thread {} completed block {}", block, y);
+                    if verbose {
+                        println!("Thread {} completed block {}", block, y);
+                    }
                 }
 
                 let mut buf = buf.lock().unwrap();
