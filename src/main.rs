@@ -15,7 +15,6 @@ use std::io::Write;
 
 use std::sync::Arc;
 
-use rand::Rng;
 use std::time;
 
 use std::io::BufReader;
@@ -79,7 +78,7 @@ fn main() {
 
     let world_ptr = Arc::new(world);
 
-    let str_buf = camera.parallel_render(256, &world_ptr, false);
+    let str_buf = camera.render(world_ptr.clone(), 16);
 
     file.write_all(str_buf.as_ref()).unwrap();
 
