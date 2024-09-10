@@ -106,7 +106,7 @@ impl Sphere {
         return Self {
             center,
             radius,
-            material: Arc::clone(material),
+            material: material.clone(),
         };
     }
 }

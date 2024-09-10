@@ -73,7 +73,7 @@ fn main() {
 
     let world_ptr = Arc::new(world);
 
-    let str_buf = camera.parallel_render(16, &world_ptr);
+    let str_buf = camera.render(&world_ptr, 16);
 
     file.write_all(str_buf.as_ref()).unwrap();
 
