@@ -97,7 +97,7 @@ impl Camera {
         return color / (self.samples_per_pixel as f64);
     }
 
-    pub fn render(&self, world: &Arc<HittableList>, y_blocks: i64) -> String {
+    pub fn render(&self, world: Arc<HittableList>, y_blocks: i64) -> String {
         let buf_size = self.image_height * self.image_width * 3;
         let block_height = self.image_height / y_blocks;
         let block_size = self.image_width * 3;
