@@ -126,9 +126,6 @@ impl Camera {
                         local_buf[(y * block_size + x * 3 + 1) as usize] = c.y();
                         local_buf[(y * block_size + x * 3 + 2) as usize] = c.z();
                     }
-                    if verbose {
-                        println!("Thread {} completed block {}", block, y);
-                    }
                 }
 
                 let mut buf = buf.lock().unwrap();
