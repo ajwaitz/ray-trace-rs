@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <title>hello-wasm example</title>
+  </head>
+  <body>
+    <script type="module">
+      import init, { render } from "./pkg/ray_trace_rs.js";
+      init().then(() => {
+        const img = render();
+        const imgElement = document.createElement('img');
+        imgElement.src = img;
+        document.body.appendChild(imgElement);
+      });
+    </script>
+  </body>
+</html>

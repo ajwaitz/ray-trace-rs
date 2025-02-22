@@ -1,12 +1,13 @@
 use crate::interval::Interval;
 use crate::material::ScatterResult;
-use crate::util::{write_color, write_new_line};
+use crate::util::{write_color, write_new_line, process_rgb};
 use crate::vec3::Vec3;
 use crate::world::{HitResult, HittableList, Ray};
 use rand::prelude::ThreadRng;
 use rand::{thread_rng, Rng};
 use std::sync::{Arc, Mutex};
 use std::thread;
+use image::{ImageBuffer, Rgb};
 
 #[derive(Copy, Clone)]
 pub struct Camera {
@@ -96,7 +97,7 @@ impl Camera {
         return color / (self.samples_per_pixel as f64);
     }
 
-    pub fn render(&self, world: Arc<HittableList>, y_blocks: i64) -> String {
+    pub fn render(&self, world: Arc<HittableList>, y_blocks: i64) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
         let buf_size = self.image_height * self.image_width * 3;
         let block_height = self.image_height / y_blocks;
         let block_size = self.image_width * 3;
@@ -143,19 +144,19 @@ impl Camera {
         let buf = buf.lock().unwrap();
 
         // Unwrapping buffer to a string
-        let mut str_buf: String = String::new();
-        str_buf.push_str(format!("P3\n{} {}\n255\n", self.image_width, self.image_width).as_str());
 
-        for j in 0..self.image_height {
-            for i in 0..self.image_width {
-                let x = buf[(j * block_size + i * 3) as usize];
-                let y = buf[(j * block_size + i * 3 + 1) as usize];
-                let z = buf[(j * block_size + i * 3 + 2) as usize];
-                write_color(&mut str_buf, Vec3::new(x, y, z));
-            }
-            write_new_line(&mut str_buf);
+        let mut img = ImageBuffer::new(self.image_width as u32, self.image_height as u32);
+
+        for (i, j, pixel) in img.enumerate_pixels_mut() {
+            let idx = (j as i64 * block_size + i as i64 * 3) as usize;
+
+            let x = buf[idx];
+            let y = buf[idx + 1];
+            let z = buf[idx + 2];
+
+            *pixel = process_rgb(Rgb([x as u8, y as u8, z as u8]));
         }
 
-        return str_buf;
+        return img;
     }
 }
