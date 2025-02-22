@@ -9,10 +9,10 @@ pub fn write_color(buf: &mut String, color: Vec3) {
     buf.push_str(format!("{} {} {} ", r, g, b).as_str());
 }
 
-pub fn process_rgb(color: Rgb<u8>) -> Rgb<u8> {
-    let r = (255.0 * liner_to_gamma(color[0] as f64)).trunc() as u8;
-    let g = (255.0 * liner_to_gamma(color[1] as f64)).trunc() as u8;
-    let b = (255.0 * liner_to_gamma(color[2] as f64)).trunc() as u8;
+pub fn process_rgb(color: Vec3) -> Rgb<u8> {
+    let r = (255.0 * liner_to_gamma(color.x())).trunc() as u8;
+    let g = (255.0 * liner_to_gamma(color.y())).trunc() as u8;
+    let b = (255.0 * liner_to_gamma(color.z())).trunc() as u8;
 
     return Rgb([r, g, b]);
 }

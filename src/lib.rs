@@ -11,7 +11,7 @@ use world::{HittableList, Sphere};
 use vec3::Vec3;
 
 use std::sync::Arc;
-
+use rand::{thread_rng, Rng};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -37,15 +37,21 @@ pub fn render() -> Vec<u8> {
         0.5,
         &material_right,
     )));
+
+    let mut rng = thread_rng();
+    let random_x: f64 = rng.gen_range(-0.2..0.2);
+    let random_y: f64 = rng.gen_range(-0.2..0.2);
+    // let random_radius: f64 = rng.gen_range(0.1..1.0);
+
     world.add(Arc::new(Sphere::new(
-        Vec3(0.5, 0.0, -0.7),
-        0.05,
+        Vec3(random_x, random_y, -0.5),
+        0.1,
         &material_left,
     )));
 
     let world_ptr = Arc::new(world);
 
-    let img = camera.render(world_ptr.clone(), 16);
+    let img = camera.render_single_thread(world_ptr.clone());
 
     let mut png_bytes: Vec<u8> = Vec::new();
     img.write_to(&mut std::io::Cursor::new(&mut png_bytes), image::ImageFormat::Png)

@@ -97,6 +97,18 @@ impl Camera {
         return color / (self.samples_per_pixel as f64);
     }
 
+    pub fn render_single_thread(&self, world: Arc<HittableList>) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
+        let mut img = ImageBuffer::new(self.image_width as u32, self.image_height as u32);
+
+        let mut rng = thread_rng();
+        for (i, j, pixel) in img.enumerate_pixels_mut() {
+            let c = self.render_pixel(&world, &mut rng, i as i64, j as i64);
+            *pixel = process_rgb(c);
+        }
+
+        return img;
+    }
+
     pub fn render(&self, world: Arc<HittableList>, y_blocks: i64) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
         let buf_size = self.image_height * self.image_width * 3;
         let block_height = self.image_height / y_blocks;
@@ -154,7 +166,7 @@ impl Camera {
             let y = buf[idx + 1];
             let z = buf[idx + 2];
 
-            *pixel = process_rgb(Rgb([x as u8, y as u8, z as u8]));
+            *pixel = process_rgb(Vec3::new(x, y, z));
         }
 
         return img;

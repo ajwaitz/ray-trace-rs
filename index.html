@@ -5,13 +5,18 @@
     <title>hello-wasm example</title>
   </head>
   <body>
+    <img id="output" />
     <script type="module">
       import init, { render } from "./pkg/ray_trace_rs.js";
       init().then(() => {
-        const img = render();
-        const imgElement = document.createElement('img');
-        imgElement.src = img;
-        document.body.appendChild(imgElement);
+        const imageBytes = render(256, 256);
+        const base64 = btoa(String.fromCharCode(...imageBytes));
+        const dataUrl = `data:image/png;base64,${base64}`;
+        document.getElementById('output').src = dataUrl;
+
+        console.log(imageBytes);
+        console.log(dataUrl);
+        console.log("image generated!");
       });
     </script>
   </body>
