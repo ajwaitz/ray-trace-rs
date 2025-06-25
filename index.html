@@ -9,14 +9,10 @@
     <script type="module">
       import init, { render } from "./pkg/ray_trace_rs.js";
       init().then(() => {
-        const imageBytes = render(256, 256);
+        const imageBytes = render(1n);
         const base64 = btoa(String.fromCharCode(...imageBytes));
         const dataUrl = `data:image/png;base64,${base64}`;
         document.getElementById('output').src = dataUrl;
-
-        console.log(imageBytes);
-        console.log(dataUrl);
-        console.log("image generated!");
       });
     </script>
   </body>

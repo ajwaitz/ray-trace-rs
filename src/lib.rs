@@ -15,8 +15,9 @@ use rand::{thread_rng, Rng};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
-pub fn render() -> Vec<u8> {
-    let camera = Camera::new();
+pub fn render(samples: i64) -> Vec<u8> {
+    let mut camera = Camera::new();
+    camera.samples_per_pixel = samples; 
 
     let mut world = HittableList::new();
 
@@ -32,15 +33,19 @@ pub fn render() -> Vec<u8> {
         100.0,
         &material_ground,
     )));
+
+    let mut rng = thread_rng();
+
+    let random_x_: f64 = rng.gen_range(-1.0..1.0);
+
     world.add(Arc::new(Sphere::new(
-        Vec3(1.0, 0.0, -1.0),
+        Vec3(random_x_, 0.0, -1.0),
         0.5,
         &material_right,
     )));
-
-    let mut rng = thread_rng();
-    let random_x: f64 = rng.gen_range(-0.2..0.2);
-    let random_y: f64 = rng.gen_range(-0.2..0.2);
+    
+    let random_x: f64 = rng.gen_range(-0.3..0.3);
+    let random_y: f64 = rng.gen_range(-0.3..0.3);
     // let random_radius: f64 = rng.gen_range(0.1..1.0);
 
     world.add(Arc::new(Sphere::new(
