@@ -24,7 +24,7 @@ fn main() {
     let args = Args::parse();
 
     let filename = args.filename;
-    let mut verbose = args.verbose;
+    let verbose = args.verbose;
 
     let start = time::Instant::now();
     let mut file = File::create(filename).unwrap();
