@@ -66,7 +66,7 @@ impl ThreadedCamera {
 
         // Unwrapping buffer to a string
         let mut str_buf: String = String::new();
-        str_buf.push_str(format!("P3\n{} {}\n255\n", self.core_camera.image_width, self.core_camera.image_width).as_str());
+        str_buf.push_str(format!("P3\n{} {}\n255\n", self.core_camera.image_width, self.core_camera.image_height).as_str());
 
         for j in 0..self.core_camera.image_height {
             for i in 0..self.core_camera.image_width {
