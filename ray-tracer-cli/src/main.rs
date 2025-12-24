@@ -3,15 +3,31 @@ use std::fs::File;
 use std::io::{BufReader, Write};
 use std::sync::Arc;
 use std::time;
+use clap::Parser;
 
 mod threaded_camera;
 use threaded_camera::ThreadedCamera;
 
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Name of the output file
+    #[arg(short, long)]
+    filename: String,
+
+    /// Verbosity
+    #[arg(short, long)]
+    verbose: bool,
+}
+
 fn main() {
-    let verbose = true;
+    let args = Args::parse();
+
+    let filename = args.filename;
+    let mut verbose = args.verbose;
 
     let start = time::Instant::now();
-    let mut file = File::create("test.ppm").unwrap();
+    let mut file = File::create(filename).unwrap();
 
     let camera = ThreadedCamera::new();
 
