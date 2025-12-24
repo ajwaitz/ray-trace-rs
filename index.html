@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <title>Ray Tracer WASM Demo</title>
+  </head>
+  <body>
+    <h1>Ray Tracer WASM Demo</h1>
+    <img id="output" />
+    <script type="module">
+      import init, { render } from "./pkg/ray_tracer_wasm.js";
+      init().then(() => {
+        const imageBytes = render(1n);
+        const base64 = btoa(String.fromCharCode(...imageBytes));
+        const dataUrl = `data:image/png;base64,${base64}`;
+        document.getElementById('output').src = dataUrl;
+      });
+    </script>
+  </body>
+</html>
+

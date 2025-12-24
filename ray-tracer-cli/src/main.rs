@@ -1,23 +1,12 @@
-mod camera;
-mod interval;
-mod material;
-mod util;
-mod vec3;
-mod world;
-
-use camera::Camera;
-use material::{Lambertian, Material, Metal};
-use world::{HittableList, Sphere, Triangle, Polygon};
-use vec3::Vec3;
-
+use ray_tracer_core::*;
 use std::fs::File;
 use std::io::Write;
-
 use std::sync::Arc;
-
 use std::time;
-
 use std::io::BufReader;
+
+mod threaded_camera;
+use threaded_camera::ThreadedCamera;
 
 fn main() {
     let verbose = true;
@@ -25,7 +14,7 @@ fn main() {
     let start = time::Instant::now();
     let mut file = File::create("test.ppm").unwrap();
 
-    let camera = Camera::new();
+    let camera = ThreadedCamera::new();
 
     let mut world = HittableList::new();
 
@@ -46,11 +35,6 @@ fn main() {
         100.0,
         &material_ground,
     )));
-    // world.add(Arc::new(Sphere::new(
-    //     Vec3(0.0, 0.0, -1.2),
-    //     0.5,
-    //     &material_center,
-    // )));
     world.add(Arc::new(Sphere::new(
         Vec3(-1.0, 0.0, -1.0),
         0.5,
@@ -66,17 +50,6 @@ fn main() {
         0.05,
         &material_left,
     )));
-    // world.add(Arc::new(Sphere::new(
-    //     Vec3(-0.5, 0.0, -1.2),
-    //     0.05,
-    //     &material_right,
-    // )));
-    // world.add(Arc::new(Triangle::new(
-    //     Vec3(0.7, -0.2, -1.2),
-    //     Vec3(-0.7, -0.2, -0.8),
-    //     Vec3(0.0, 0.7, -1.5),
-    //     &material_right,
-    // )));
 
     let world_ptr = Arc::new(world);
 

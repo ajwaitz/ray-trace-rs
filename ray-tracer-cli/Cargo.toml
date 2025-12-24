@@ -1,0 +1,12 @@
+[package]
+name = "ray-tracer-cli"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "ray-tracer"
+path = "src/main.rs"
+
+[dependencies]
+ray-tracer-core = { path = "../ray-tracer-core" }
+rand = { workspace = true }
