@@ -1,6 +1,4 @@
 use ray_tracer_core::*;
-use rand::prelude::ThreadRng;
-use rand::thread_rng;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
@@ -32,7 +30,7 @@ impl ThreadedCamera {
             let width: i64 = self.core_camera.image_width;
 
             let handle: thread::JoinHandle<()> = thread::spawn(move || {
-                let mut rng = thread_rng();
+                let mut rng = rand::rng();
 
                 let q = block_height * block_size;
                 let mut local_buf = vec![0.0; q as usize];

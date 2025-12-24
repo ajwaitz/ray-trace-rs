@@ -2,8 +2,8 @@ use crate::interval::Interval;
 use crate::material::ScatterResult;
 use crate::vec3::Vec3;
 use crate::world::{HitResult, HittableList, Ray};
-use rand::prelude::ThreadRng;
-use rand::{thread_rng, Rng};
+use rand::rngs::ThreadRng;
+use rand::Rng;
 
 #[derive(Copy, Clone)]
 pub struct Camera {
@@ -78,8 +78,8 @@ impl Camera {
 
         let mut color = Vec3::new(0.0, 0.0, 0.0);
         for _ in 0..self.samples_per_pixel {
-            let x_noise = rng.gen_range(-0.5..0.5);
-            let y_noise = rng.gen_range(-0.5..0.5);
+            let x_noise = rng.random_range(-0.5..0.5);
+            let y_noise = rng.random_range(-0.5..0.5);
             let new_pixel_center =
                 pixel_center + self.pixel_delta_u * x_noise + self.pixel_delta_v * y_noise;
             let ray_dir = new_pixel_center - self.center;
@@ -95,7 +95,7 @@ impl Camera {
 
     // Single-threaded render method for core library
     pub fn render_single_threaded(&self, world: &HittableList) -> Vec<Vec3> {
-        let mut rng = thread_rng();
+        let mut rng = rand::rng();
         let mut pixels = Vec::with_capacity((self.image_height * self.image_width) as usize);
         
         for j in 0..self.image_height {

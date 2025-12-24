@@ -1,5 +1,5 @@
 use image::{ImageBuffer, Rgb};
-use rand::{thread_rng, Rng};
+use rand::Rng;
 use ray_tracer_core::*;
 use std::sync::Arc;
 use wasm_bindgen::prelude::*;
@@ -61,16 +61,16 @@ pub fn render(samples: i64) -> Vec<u8> {
     )));
 
     // Randomized spheres
-    let mut rng = thread_rng();
-    let random_x: f64 = rng.gen_range(-1.0..1.0);
+    let mut rng = rand::rng();
+    let random_x: f64 = rng.random_range(-1.0..1.0);
     world.add(Arc::new(Sphere::new(
         Vec3(random_x, 0.0, -1.0),
         0.5,
         &mats.right,
     )));
 
-    let random_x: f64 = rng.gen_range(-0.3..0.3);
-    let random_y: f64 = rng.gen_range(-0.3..0.3);
+    let random_x: f64 = rng.random_range(-0.3..0.3);
+    let random_y: f64 = rng.random_range(-0.3..0.3);
     world.add(Arc::new(Sphere::new(
         Vec3(random_x, random_y, -0.5),
         0.1,

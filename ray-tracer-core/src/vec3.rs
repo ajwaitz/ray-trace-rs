@@ -3,7 +3,7 @@
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
 use rand;
-use rand::{thread_rng, Rng};
+use rand::Rng;
 
 #[derive(Copy, Clone)]
 pub struct Vec3(pub f64, pub f64, pub f64);
@@ -74,11 +74,11 @@ impl Vec3 {
     }
 
     pub fn random_range(min: f64, max: f64) -> Vec3 {
-        let mut rng = thread_rng();
+        let mut rng = rand::rng();
         return Self::new(
-            rng.gen_range(min..max),
-            rng.gen_range(min..max),
-            rng.gen_range(min..max),
+            rng.random_range(min..max),
+            rng.random_range(min..max),
+            rng.random_range(min..max),
         );
     }
 
