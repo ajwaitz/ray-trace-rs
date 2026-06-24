@@ -1,6 +1,7 @@
 use crate::interval::Interval;
 use crate::material::ScatterResult;
-use crate::util::{write_color, write_new_line, process_rgb};
+// use crate::util::{write_color, write_new_line, process_rgb};
+use crate::util::{process_rgb};
 use crate::vec3::Vec3;
 use crate::world::{HitResult, HittableList, Ray};
 use rand::prelude::ThreadRng;
